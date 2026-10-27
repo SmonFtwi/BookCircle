@@ -1,4 +1,5 @@
 "use client";
+import { ForumReactions } from "./forum-reactions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -315,6 +316,7 @@ export function QuestionPage({ id }: { id: string }) {
           {q.bookTitle ? ` · ${q.bookTitle}` : ""}
         </p>
         <p className="prose">{q.content}</p>
+        <ForumReactions target={{ questionId: id }} />
         <div className="reaction-row">
           <button
             disabled={q.isMine || busy}
@@ -429,6 +431,7 @@ export function QuestionPage({ id }: { id: string }) {
               )}
             </div>
             <p className="prose mt-3">{a.content}</p>
+            {!a.removed && <ForumReactions target={{ answerId: a.id }} />}
             {!a.removed && (
               <div className="reaction-row">
                 <button

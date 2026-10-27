@@ -437,7 +437,7 @@ export function ReadingPage() {
       <PageHeading
         eyebrow="ONE PAGE AT A TIME"
         title="Your reading journey"
-        description="Keep the stories close. Make the lessons last."
+        description="Choose a book from Club library, then use Reading status to add it to your list or move it between shelves."
         action={<LogReading />}
       />
       <div className="row between mb-6">

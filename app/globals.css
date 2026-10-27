@@ -1382,3 +1382,15 @@ th {
     font-size: 21px;
   }
 }
+
+.reaction-row button[aria-pressed] {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 12px;
+}
+.reaction-row button[aria-pressed="true"] {
+  color: #245c4f;
+  background: #e4eee6;
+  box-shadow: inset 0 0 0 1px #a8c4af;
+}

@@ -27,6 +27,11 @@ begin
  perform set_config('request.jwt.claim.sub',member_id::text,true);perform set_config('role','authenticated',true);
  perform public.bookcircle_mutate('profiles.update','{"name":"Member","timezone":"UTC","shareReadingDetails":false,"notificationsEnabled":true}');
  perform public.bookcircle_mutate('reading.setBook',jsonb_build_object('bookId',book,'status','reading'));
+ foreach op in array array['want','reading','completed','paused'] loop
+ perform public.bookcircle_mutate('reading.setBook',jsonb_build_object('bookId',book,'status',op));
+ j=public.bookcircle_query('reading.myBooks');if j->0->'entry'->>'status'<>op then raise exception 'Shelf status did not update: %',op;end if;
+ end loop;
+ perform public.bookcircle_mutate('reading.setBook',jsonb_build_object('bookId',book,'status','reading'));
  perform public.bookcircle_mutate('reading.setGoals','{"pages":100,"minutes":150,"days":5}');
  perform public.bookcircle_mutate('reading.log',jsonb_build_object('bookId',book,'date',current_date,'startPage',0,'endPage',25,'minutes',30,'notes','Private note','reflection','Private reflection','commitment',jsonb_build_object('title','Apply it','targetDate',current_date+7)));
  j=public.bookcircle_query('reading.stats','{}');if (j->'totals'->>'pages')::int<>25 or (j->>'streak')::int<>1 then raise exception 'Incorrect reading stats: %',j;end if;
@@ -40,6 +45,15 @@ begin
  perform public.bookcircle_mutate('forum.vote',jsonb_build_object('questionId',question));
  answer=(public.bookcircle_mutate('forum.answer',jsonb_build_object('questionId',question,'content','Practice it','anonymous',true))#>>'{}')::uuid;
  perform public.bookcircle_mutate('forum.accept',jsonb_build_object('questionId',question,'answerId',answer));
+ perform public.toggle_forum_reaction('❤️',question,null);
+ j=public.forum_reactions(question,null);
+ if jsonb_array_length(j)<>1 or (j->0->>'count')::int<>1 or not (j->0->>'mine')::boolean then raise exception 'Question reaction failed';end if;
+ if j::text like '%'||member_id::text||'%' then raise exception 'Reaction author identity exposed';end if;
+ perform public.toggle_forum_reaction('❤️',question,null);
+ if jsonb_array_length(public.forum_reactions(question,null))<>0 then raise exception 'Reaction toggle failed';end if;
+ perform public.toggle_forum_reaction('💡',null,answer);
+ if (public.forum_reactions(null,answer)->0->>'count')::int<>1 then raise exception 'Answer reaction failed';end if;
+ rejected=false;begin perform public.toggle_forum_reaction('invalid',question,null);exception when others then rejected=true;end;if not rejected then raise exception 'Invalid emoji accepted';end if;
  j=public.bookcircle_query('forum.detail',jsonb_build_object('questionId',question));if j::text like '%'||member_id::text||'%' or j->'author'->>'name'<>'Anonymous member' then raise exception 'Anonymous author exposed';end if;
  perform public.bookcircle_mutate('forum.report',jsonb_build_object('questionId',question,'reason','Test report'));
  commitment=(public.bookcircle_mutate('club.saveCommitment',jsonb_build_object('title','Try habit','description','Daily','targetDate',current_date+7,'shared',true))#>>'{}')::uuid;
@@ -70,6 +84,9 @@ begin
  perform public.bookcircle_query('forum.answers',jsonb_build_object('questionId',question));
  perform public.bookcircle_query('community.comments',jsonb_build_object('id',post));
  perform set_config('request.jwt.claim.sub',stranger_id::text,true);
+ rejected=false;begin perform public.toggle_forum_reaction('❤️',question,null);exception when others then rejected=true;end;if not rejected then raise exception 'Cross-club reaction allowed';end if;
+ rejected=false;begin perform public.forum_reactions(null,answer);exception when others then rejected=true;end;if not rejected then raise exception 'Cross-club reaction read allowed';end if;
+
  rejected=false;begin perform public.bookcircle_query('forum.detail',jsonb_build_object('questionId',question));exception when others then rejected=true;end;if not rejected then raise exception 'Cross-club read';end if;
  rejected=false;begin perform public.bookcircle_mutate('community.react',jsonb_build_object('id',post,'type','helpful'));exception when others then rejected=true;end;if not rejected then raise exception 'Cross-club write';end if;
  perform set_config('request.jwt.claim.sub',admin_id::text,true);

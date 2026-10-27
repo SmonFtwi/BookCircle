@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import type { Id } from "@/lib/supabase/contracts";
-import { MessageCircle, Lightbulb, Leaf, Heart, Plus } from "lucide-react";
+import { MessageCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ActionForm,
@@ -171,9 +171,9 @@ export function InsightCard({ item }: { item: Insight }) {
       <div className="reaction-row">
         {(
           [
-            { type: "helpful", label: "Helpful", icon: Heart },
-            { type: "interesting", label: "Interesting", icon: Lightbulb },
-            { type: "applied", label: "Applied", icon: Leaf },
+            { type: "helpful", label: "Helpful", emoji: "❤️" },
+            { type: "interesting", label: "Interesting", emoji: "💡" },
+            { type: "applied", label: "Applied", emoji: "🌱" },
           ] as const
         ).map((r) => (
           <button
@@ -184,10 +184,7 @@ export function InsightCard({ item }: { item: Insight }) {
               run(() => react({ id: item.post._id, type: r.type }))
             }
           >
-            <r.icon
-              size={14}
-              fill={item.myReactions.includes(r.type) ? "#dbe8d5" : "none"}
-            />
+            <span aria-hidden="true">{r.emoji}</span>
             {r.label} {item.post[r.type] || ""}
           </button>
         ))}
