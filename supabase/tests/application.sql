@@ -1,7 +1,7 @@
 begin;
 -- Full application flows and isolation checks. Every fixture rolls back.
 do $$
-declare c uuid; other_club uuid; admin_id uuid=gen_random_uuid(); member_id uuid=gen_random_uuid(); stranger_id uuid=gen_random_uuid(); book uuid; category uuid; question uuid; answer uuid; post uuid; commitment uuid; challenge uuid; round_id uuid; meeting uuid; nomination uuid; code text=upper('TEST-'||gen_random_uuid()); j jsonb; inv jsonb; op text; rejected boolean;
+declare c uuid; other_club uuid; admin_id uuid=gen_random_uuid(); member_id uuid=gen_random_uuid(); stranger_id uuid=gen_random_uuid(); book uuid; category uuid; question uuid; answer uuid; post uuid; commitment uuid; challenge uuid; round_id uuid; meeting uuid; nomination uuid; code text=upper('TEST-'||gen_random_uuid()); j jsonb; inv jsonb; op text; rejected boolean; member_membership uuid; admin_membership uuid; foreign_membership uuid; staff_post uuid; staff_question uuid; staff_answer uuid; staff_book uuid;
 begin
  insert into public.clubs(name) values('TEST transaction') returning id into c;
  insert into public.club_revisions(club_id) values(c);
@@ -84,6 +84,7 @@ begin
  perform public.bookcircle_query('forum.answers',jsonb_build_object('questionId',question));
  perform public.bookcircle_query('community.comments',jsonb_build_object('id',post));
  perform set_config('request.jwt.claim.sub',stranger_id::text,true);
+ foreign_membership=(public.bookcircle_query('profiles.me')->'membership'->>'_id')::uuid;
  rejected=false;begin perform public.toggle_forum_reaction('❤️',question,null);exception when others then rejected=true;end;if not rejected then raise exception 'Cross-club reaction allowed';end if;
  rejected=false;begin perform public.forum_reactions(null,answer);exception when others then rejected=true;end;if not rejected then raise exception 'Cross-club reaction read allowed';end if;
 
@@ -93,6 +94,53 @@ begin
  perform public.bookcircle_mutate('club.closeVoting',jsonb_build_object('id',round_id));
  j=public.bookcircle_query('club.votingRounds');if (j->0->'round'->>'winnerId')::uuid<>book or (j->0->'nominations'->0->>'votes')::int<>1 then raise exception 'Vote winner failed';end if;
  foreach op in array array['admin.overview','admin.members','admin.invitations','admin.reports'] loop perform public.bookcircle_query(op);end loop;
+ -- Administrator role management and moderator isolation.
+ admin_membership=(public.bookcircle_query('profiles.me')->'membership'->>'_id')::uuid;
+ select (value->'membership'->>'_id')::uuid into member_membership from jsonb_array_elements(public.bookcircle_query('admin.members')) where value->'membership'->>'profileId'=member_id::text;
+ rejected=false;begin perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',admin_membership,'role','moderator'));exception when others then rejected=sqlerrm like '%at least one active administrator%';end;if not rejected then raise exception 'Last admin demotion not blocked';end if;
+ rejected=false;begin perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',foreign_membership,'role','admin'));exception when others then rejected=sqlerrm='Member not found';end;if not rejected then raise exception 'Cross-club role change allowed';end if;
+ rejected=false;begin perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','superadmin'));exception when others then rejected=sqlerrm='Choose a valid role';end;if not rejected then raise exception 'Invalid role allowed';end if;
+ staff_post=(public.bookcircle_mutate('community.create','{"title":"Admin insight","content":"Original","chapter":""}')#>>'{}')::uuid;
+ staff_question=(public.bookcircle_mutate('forum.ask',jsonb_build_object('title','Admin question','content','Original','categoryId',category,'anonymous',true))#>>'{}')::uuid;
+ staff_answer=(public.bookcircle_mutate('forum.answer',jsonb_build_object('questionId',staff_question,'content','Original answer','anonymous',true))#>>'{}')::uuid;
+ perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','moderator'));
+ perform set_config('request.jwt.claim.sub',member_id::text,true);
+ if public.bookcircle_query('profiles.me')->'membership'->>'role'<>'moderator' then raise exception 'Promotion not visible';end if;
+ -- Moderators can manage another member's shared content, including anonymous posts.
+ perform public.bookcircle_mutate('community.update',jsonb_build_object('id',staff_post,'title','Moderated insight','content','Reviewed','chapter',''));
+ perform public.bookcircle_mutate('forum.updateQuestion',jsonb_build_object('id',staff_question,'title','Moderated question','content','Reviewed'));
+ perform public.bookcircle_mutate('forum.updateAnswer',jsonb_build_object('id',staff_answer,'content','Reviewed answer'));
+ perform public.bookcircle_mutate('forum.moderate',jsonb_build_object('questionId',staff_question,'pinned',true,'locked',true));
+ staff_book=(public.bookcircle_mutate('reading.addBook','{"title":"Moderator book","author":"Author","totalPages":100,"category":"Growth","description":"","coverUrl":""}')#>>'{}')::uuid;
+ perform public.bookcircle_mutate('reading.editBook',jsonb_build_object('bookId',staff_book,'title','Edited book','author','Author','totalPages',120,'category','Growth','description','','coverUrl',''));
+ perform public.bookcircle_mutate('reading.deleteBook',jsonb_build_object('bookId',staff_book));
+ perform public.bookcircle_mutate('admin.setWeeklyPrompt','{"prompt":"Moderator prompt"}');
+ perform public.bookcircle_mutate('admin.saveCategory',jsonb_build_object('id',category,'name','Moderated category','active',true));
+ j=public.bookcircle_query('admin.reports');
+ perform public.bookcircle_mutate('admin.resolveReport',jsonb_build_object('id',j->0->>'_id'));
+ perform public.bookcircle_query('admin.overview');
+ perform public.bookcircle_query('forum.moderationIdentity',jsonb_build_object('questionId',staff_question));
+ -- Invitations, account status, and roles remain admin-only even via direct RPC.
+ foreach op in array array['admin.members','admin.invitations'] loop
+ rejected=false;begin perform public.bookcircle_query(op);exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Moderator read admin-only data: %',op;end if;
+ end loop;
+ foreach op in array array['admin.setMemberRole','admin.setMemberStatus','admin.generateInvitation','admin.revokeInvitation'] loop
+ rejected=false;begin perform public.bookcircle_mutate(op,jsonb_build_object('id',member_membership,'role','admin','status','inactive','maxUses',1,'expiresInDays',1));exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Moderator performed admin action: %',op;end if;
+ end loop;
+ perform public.bookcircle_mutate('community.remove',jsonb_build_object('id',staff_post));
+ perform public.bookcircle_mutate('forum.removeAnswer',jsonb_build_object('id',staff_answer));
+ perform public.bookcircle_mutate('forum.removeQuestion',jsonb_build_object('id',staff_question));
+ -- Demotion immediately removes content privileges for an existing session.
+ perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','member'));
+ perform set_config('request.jwt.claim.sub',member_id::text,true);
+ rejected=false;begin perform public.bookcircle_mutate('admin.setWeeklyPrompt','{"prompt":"Not allowed"}');exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Demoted member retained privileges';end if;
+ rejected=false;begin perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','admin'));exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Member self-promotion allowed';end if;
+ perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ -- A second admin may be promoted and demoted without removing the last admin.
+ perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','admin'));
+ perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','member'));
+
  perform set_config('role','none',true);
  update public.memberships set status='inactive' where profile_id=member_id;
  perform set_config('request.jwt.claim.sub',member_id::text,true);perform set_config('role','authenticated',true);

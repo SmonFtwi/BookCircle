@@ -69,7 +69,7 @@ export function VotingPage() {
         eyebrow="LET THE CIRCLE CHOOSE"
         title="Our next good read"
         description="One member, one vote. A whole new perspective ahead."
-        action={membership.role === "admin" ? <CreateRound /> : undefined}
+        action={membership.role !== "member" ? <CreateRound /> : undefined}
       />
       {feedback}
       <div className="stack">
@@ -132,7 +132,7 @@ export function VotingPage() {
                   description="Your administrator can add books from the club library."
                 />
               )}
-              {membership.role === "admin" && r.status === "open" && (
+              {membership.role !== "member" && r.status === "open" && (
                 <div className="pill-row mt-6">
                   <Modal
                     title="Nominate a book"
@@ -292,7 +292,7 @@ export function MeetingsPage() {
         eyebrow="BEYOND THE LAST PAGE"
         title="Gather with your circle"
         description="Make space for conversation, connection, and a new point of view."
-        action={membership.role === "admin" ? <CreateMeeting /> : undefined}
+        action={membership.role !== "member" ? <CreateMeeting /> : undefined}
       />
       <div className="stack">
         {rows.length ? (
@@ -418,7 +418,7 @@ export function MeetingsPage() {
                     </ActionForm>
                   </Modal>
                 )}
-                {membership.role === "admin" && (
+                {membership.role !== "member" && (
                   <Modal
                     title="Meeting agenda"
                     trigger={

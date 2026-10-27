@@ -43,6 +43,7 @@ export const api = {
   admin: {
     overview: endpoint("admin.overview", true),
     members: endpoint("admin.members", true),
+    setMemberRole: endpoint("admin.setMemberRole", false),
     setMemberStatus: endpoint("admin.setMemberStatus", false),
     invitations: endpoint("admin.invitations", true),
     generateInvitation: endpoint("admin.generateInvitation", false),

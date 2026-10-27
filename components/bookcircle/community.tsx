@@ -91,6 +91,7 @@ export function ShareInsight({
   );
 }
 function Comments({ id }: { id: Id<"insights"> }) {
+  const { membership } = useMember();
   const rows = usePaginatedQuery(
     api.community.comments,
     { id },
@@ -105,7 +106,7 @@ function Comments({ id }: { id: Id<"insights"> }) {
         <div key={c._id} className="list-item">
           <strong className="author-name">{author.name}</strong>
           <p>{c.content}</p>
-          {isMine && (
+          {(isMine || membership.role !== "member") && (
             <button
               className="text-button"
               onClick={() => run(() => remove({ id: c._id }))}
@@ -137,7 +138,7 @@ export function InsightCard({ item }: { item: Insight }) {
   const [confirm, setConfirm] = useState(false);
   const react = useMutation(api.community.react);
   const remove = useMutation(api.community.remove);
-  const { profile } = useMember();
+  const { profile, membership } = useMember();
   const { run, feedback, busy } = useFeedback();
   return (
     <article className="feed-card">
@@ -193,7 +194,7 @@ export function InsightCard({ item }: { item: Insight }) {
           {item.post.commentCount} comments
         </button>
       </div>
-      {item.post.authorId === profile._id && (
+      {(item.post.authorId === profile._id || membership.role !== "member") && (
         <div className="reaction-row">
           <ShareInsight existing={item} trigger={<button>Edit</button>} />
           <button className="danger-link" onClick={() => setConfirm(true)}>

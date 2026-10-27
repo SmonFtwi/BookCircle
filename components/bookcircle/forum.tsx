@@ -93,7 +93,7 @@ export function AskQuestion({ trigger }: { trigger?: React.ReactNode }) {
         </label>
         <p className="meta">
           Anonymous posts hide your identity from other members. Administrators
-          can identify authors for moderation.
+          and moderators can identify authors for moderation.
         </p>
       </ActionForm>
     </Modal>
@@ -274,7 +274,8 @@ function AnswerForm({
         Answer anonymously
       </label>
       <p className="meta">
-        Administrators may identify anonymous authors for moderation.
+        Administrators and moderators may identify anonymous authors for
+        moderation.
       </p>
     </ActionForm>
   );
@@ -338,7 +339,7 @@ export function QuestionPage({ id }: { id: string }) {
               </Field>
             </ActionForm>
           </Modal>
-          {q.isMine && (
+          {(q.isMine || membership.role !== "member") && (
             <Modal title="Edit question" trigger={<button>Edit</button>}>
               <ActionForm
                 onSubmit={(d) =>
@@ -358,7 +359,7 @@ export function QuestionPage({ id }: { id: string }) {
               </ActionForm>
             </Modal>
           )}
-          {(q.isMine || membership.role === "admin") && (
+          {(q.isMine || membership.role !== "member") && (
             <Modal
               title="Remove this question?"
               trigger={<button className="danger-link">Remove</button>}
@@ -378,7 +379,7 @@ export function QuestionPage({ id }: { id: string }) {
             </Modal>
           )}
         </div>
-        {membership.role === "admin" && (
+        {membership.role !== "member" && (
           <div className="pill-row mt-4">
             <Button
               variant="outline"
@@ -458,7 +459,7 @@ export function QuestionPage({ id }: { id: string }) {
                     {a.accepted ? "Unmark accepted" : "Accept answer"}
                   </button>
                 )}
-                {a.isMine && (
+                {(a.isMine || membership.role !== "member") && (
                   <Modal title="Edit answer" trigger={<button>Edit</button>}>
                     <ActionForm
                       onSubmit={(d) =>
@@ -475,7 +476,7 @@ export function QuestionPage({ id }: { id: string }) {
                     </ActionForm>
                   </Modal>
                 )}
-                {(a.isMine || membership.role === "admin") && (
+                {(a.isMine || membership.role !== "member") && (
                   <button
                     className="danger-link"
                     onClick={() => run(() => removeAnswer({ id: a.id }))}

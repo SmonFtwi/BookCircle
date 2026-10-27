@@ -23,23 +23,27 @@ import { CreateChallenge } from "./challenges";
 import { CreateMeeting, CreateRound } from "./events";
 export function AdminPage() {
   const { membership } = useMember();
-  return membership.role === "admin" ? (
+  return membership.role !== "member" ? (
     <AdminContent />
   ) : (
     <Empty
-      title="Administrator access required"
-      description="These tools are available to your club administrators."
+      title="Content manager access required"
+      description="These tools are available to administrators and moderators."
     />
   );
 }
 function AdminContent() {
+  const { membership, profile } = useMember();
+  const isAdmin = membership.role === "admin";
+  const directory = useQuery(api.profiles.directory);
   const summary = useQuery(api.admin.overview);
-  const members = useQuery(api.admin.members);
-  const invitations = useQuery(api.admin.invitations);
+  const members = useQuery(api.admin.members, isAdmin ? {} : "skip");
+  const invitations = useQuery(api.admin.invitations, isAdmin ? {} : "skip");
   const reports = useQuery(api.admin.reports);
   const categories = useQuery(api.forum.categories);
   const generate = useAction(api.admin.generateInvitation);
   const revoke = useMutation(api.admin.revokeInvitation);
+  const setRole = useMutation(api.admin.setMemberRole);
   const status = useMutation(api.admin.setMemberStatus);
   const resolve = useMutation(api.admin.resolveReport);
   const pair = useMutation(api.club.pairMembers);
@@ -47,12 +51,18 @@ function AdminContent() {
   const category = useMutation(api.admin.saveCategory);
   const [code, setCode] = useState("");
   const { run, busy, feedback } = useFeedback();
-  if (!summary || !members || !invitations || !reports) return <Loading />;
+  if (
+    !summary ||
+    !directory ||
+    !reports ||
+    (isAdmin && (!members || !invitations))
+  )
+    return <Loading />;
   return (
     <>
       <PageHeading
         eyebrow="CARE FOR YOUR CIRCLE"
-        title="Club administration"
+        title={isAdmin ? "Club administration" : "Content management"}
         description="A few thoughtful tools to help your community thrive."
         action={<ShieldCheck className="text-primary" />}
       />
@@ -77,173 +87,210 @@ function AdminContent() {
       {feedback}
       <div className="grid-main">
         <div className="stack">
-          <section className="panel">
-            <div className="section-head">
-              <h2>Invitation management</h2>
-              <Modal
-                title="Invite someone to the circle"
-                trigger={
-                  <Button variant="outline">
-                    <Plus />
-                    Create invite
-                  </Button>
-                }
-              >
-                <ActionForm
-                  label="Generate invitation"
-                  onSubmit={async (d) => {
-                    const result = await generate({
-                      expiresInDays: number(d, "days"),
-                      maxUses: number(d, "uses"),
-                    });
-                    setCode(result.code);
-                  }}
-                >
-                  <div className="field-row">
-                    <Field label="Expires in days">
-                      <input
-                        name="days"
-                        type="number"
-                        min={1}
-                        max={90}
-                        defaultValue={7}
-                        required
-                      />
-                    </Field>
-                    <Field label="Maximum uses">
-                      <input
-                        name="uses"
-                        type="number"
-                        min={1}
-                        max={100}
-                        defaultValue={1}
-                        required
-                      />
-                    </Field>
-                  </div>
-                </ActionForm>
-                {code && (
-                  <div className="spaced">
-                    <p className="meta">
-                      Copy this code now. Only its secure hash is stored.
-                    </p>
-                    <p className="prose break-all my-3">{code}</p>
-                    <div className="pill-row">
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          run(() => navigator.clipboard.writeText(code))
-                        }
-                      >
-                        <Copy />
-                        Copy code
+          {isAdmin && (
+            <>
+              {" "}
+              <section className="panel">
+                <div className="section-head">
+                  <h2>Invitation management</h2>
+                  <Modal
+                    title="Invite someone to the circle"
+                    trigger={
+                      <Button variant="outline">
+                        <Plus />
+                        Create invite
                       </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          run(() =>
-                            navigator.clipboard.writeText(
-                              `${window.location.origin}/?invite=${encodeURIComponent(code)}`,
-                            ),
-                          )
-                        }
-                      >
-                        Copy invite link
-                      </Button>
-                    </div>
-                    {feedback}
-                  </div>
-                )}
-              </Modal>
-            </div>
-            {invitations.length ? (
-              invitations.map((i) => (
-                <div className="list-item row between" key={i._id}>
-                  <div>
-                    <strong className="text-sm">
-                      {i.revoked
-                        ? "Revoked"
-                        : i.uses >= i.maxUses
-                          ? "Redeemed"
-                          : "Invitation"}
-                    </strong>
-                    <p className="meta">
-                      {i.uses} / {i.maxUses} uses · Expires{" "}
-                      {new Date(i.expiresAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {!i.revoked && i.uses < i.maxUses && (
-                    <Button
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => run(() => revoke({ id: i._id }))}
+                    }
+                  >
+                    <ActionForm
+                      label="Generate invitation"
+                      onSubmit={async (d) => {
+                        const result = await generate({
+                          expiresInDays: number(d, "days"),
+                          maxUses: number(d, "uses"),
+                        });
+                        setCode(result.code);
+                      }}
                     >
-                      Revoke
-                    </Button>
-                  )}
-                </div>
-              ))
-            ) : (
-              <Empty
-                title="A circle starts with an invitation"
-                description="Generate a secure, single-use code for your next member."
-              />
-            )}
-          </section>
-          <section className="panel">
-            <h2 className="mb-4">Members</h2>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Member</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Access</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((m) => (
-                    <tr key={m.membership._id}>
-                      <td>
-                        <strong>{m.name}</strong>
-                        <div className="meta">{m.email}</div>
-                        <div className="meta">
-                          Last active{" "}
-                          {new Date(m.lastActiveAt).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td>{m.membership.role}</td>
-                      <td>{m.membership.status}</td>
-                      <td>
-                        {m.membership.role !== "admin" && (
+                      <div className="field-row">
+                        <Field label="Expires in days">
+                          <input
+                            name="days"
+                            type="number"
+                            min={1}
+                            max={90}
+                            defaultValue={7}
+                            required
+                          />
+                        </Field>
+                        <Field label="Maximum uses">
+                          <input
+                            name="uses"
+                            type="number"
+                            min={1}
+                            max={100}
+                            defaultValue={1}
+                            required
+                          />
+                        </Field>
+                      </div>
+                    </ActionForm>
+                    {code && (
+                      <div className="spaced">
+                        <p className="meta">
+                          Copy this code now. Only its secure hash is stored.
+                        </p>
+                        <p className="prose break-all my-3">{code}</p>
+                        <div className="pill-row">
                           <Button
                             variant="outline"
-                            disabled={busy}
+                            onClick={() =>
+                              run(() => navigator.clipboard.writeText(code))
+                            }
+                          >
+                            <Copy />
+                            Copy code
+                          </Button>
+                          <Button
+                            variant="outline"
                             onClick={() =>
                               run(() =>
-                                status({
-                                  id: m.membership._id,
-                                  status:
-                                    m.membership.status === "active"
-                                      ? "inactive"
-                                      : "active",
-                                }),
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/?invite=${encodeURIComponent(code)}`,
+                                ),
                               )
                             }
                           >
-                            {m.membership.status === "active"
-                              ? "Deactivate"
-                              : "Activate"}
+                            Copy invite link
                           </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                        </div>
+                        {feedback}
+                      </div>
+                    )}
+                  </Modal>
+                </div>
+                {invitations?.length ? (
+                  invitations?.map((i) => (
+                    <div className="list-item row between" key={i._id}>
+                      <div>
+                        <strong className="text-sm">
+                          {i.revoked
+                            ? "Revoked"
+                            : i.uses >= i.maxUses
+                              ? "Redeemed"
+                              : "Invitation"}
+                        </strong>
+                        <p className="meta">
+                          {i.uses} / {i.maxUses} uses · Expires{" "}
+                          {new Date(i.expiresAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {!i.revoked && i.uses < i.maxUses && (
+                        <Button
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={() => run(() => revoke({ id: i._id }))}
+                        >
+                          Revoke
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <Empty
+                    title="A circle starts with an invitation"
+                    description="Generate a secure, single-use code for your next member."
+                  />
+                )}
+              </section>
+              <section className="panel">
+                <h2 className="mb-4">Members</h2>
+                <p className="meta mb-4">
+                  Moderators manage club content. Only admins can invite
+                  members, change access, or assign roles.
+                </p>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Member</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Access</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members?.map((m) => (
+                        <tr key={m.membership._id}>
+                          <td>
+                            <strong>{m.name}</strong>
+                            <div className="meta">{m.email}</div>
+                            <div className="meta">
+                              Last active{" "}
+                              {new Date(m.lastActiveAt).toLocaleDateString()}
+                            </div>
+                          </td>
+                          <td>
+                            <select
+                              aria-label={`Role for ${m.name}`}
+                              value={m.membership.role}
+                              disabled={
+                                busy || m.membership.profileId === profile._id
+                              }
+                              onChange={(event) =>
+                                run(() =>
+                                  setRole({
+                                    id: m.membership._id,
+                                    role: event.target.value as
+                                      | "admin"
+                                      | "moderator"
+                                      | "member",
+                                  }),
+                                )
+                              }
+                            >
+                              <option value="member">Member</option>
+                              <option value="moderator">Moderator</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            {m.membership.profileId === profile._id && (
+                              <p className="meta">
+                                Another admin can change your role.
+                              </p>
+                            )}
+                          </td>
+                          <td>{m.membership.status}</td>
+                          <td>
+                            {m.membership.role !== "admin" && (
+                              <Button
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() =>
+                                  run(() =>
+                                    status({
+                                      id: m.membership._id,
+                                      status:
+                                        m.membership.status === "active"
+                                          ? "inactive"
+                                          : "active",
+                                    }),
+                                  )
+                                }
+                              >
+                                {m.membership.status === "active"
+                                  ? "Deactivate"
+                                  : "Activate"}
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
+          )}
           <section className="panel">
             <h2 className="mb-4">Reported discussions</h2>
             {reports.length ? (
@@ -287,16 +334,11 @@ function AdminContent() {
                 <Field key={key} label={`Member ${i + 1}`}>
                   <select name={key} required defaultValue="">
                     <option value="">Choose a member</option>
-                    {members
-                      .filter((m) => m.membership.status === "active")
-                      .map((m) => (
-                        <option
-                          key={m.membership._id}
-                          value={m.membership.profileId}
-                        >
-                          {m.name}
-                        </option>
-                      ))}
+                    {directory.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
                   </select>
                 </Field>
               ))}

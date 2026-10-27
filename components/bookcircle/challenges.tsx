@@ -100,7 +100,7 @@ export function ChallengesPage() {
         eyebrow="A LITTLE CHALLENGE. A LOT OF ENCOURAGEMENT."
         title="Grow a little, together"
         description="Shared goals to help you make reading a steady part of life."
-        action={membership.role === "admin" ? <CreateChallenge /> : undefined}
+        action={membership.role !== "member" ? <CreateChallenge /> : undefined}
       />
       {feedback}
       {rows.length ? (

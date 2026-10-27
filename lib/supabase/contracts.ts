@@ -7,6 +7,10 @@ export interface PaginationResult<T> {
   continueCursor: string;
 }
 export interface Contracts {
+  "admin.setMemberRole": {
+    args: { id: Id<"memberships">; role: "admin" | "moderator" | "member" };
+    result: null;
+  };
   "admin.overview": {
     args: Record<string, never>;
     result: {
@@ -35,7 +39,7 @@ export interface Contracts {
       membership: {
         _id: Id<"memberships">;
         _creationTime: number;
-        role: "admin" | "member";
+        role: "admin" | "moderator" | "member";
         clubId: Id<"clubs">;
         profileId: Id<"profiles">;
         status: "active" | "inactive";
@@ -703,7 +707,7 @@ export interface Contracts {
       membership: {
         _id: Id<"memberships">;
         _creationTime: number;
-        role: "admin" | "member";
+        role: "admin" | "moderator" | "member";
         clubId: Id<"clubs">;
         profileId: Id<"profiles">;
         status: "active" | "inactive";
@@ -740,7 +744,11 @@ export interface Contracts {
   };
   "profiles.directory": {
     args: Record<string, never>;
-    result: { id: Id<"profiles">; name: string; role: "admin" | "member" }[];
+    result: {
+      id: Id<"profiles">;
+      name: string;
+      role: "admin" | "moderator" | "member";
+    }[];
   };
   "reading.library": {
     args: Record<string, never>;

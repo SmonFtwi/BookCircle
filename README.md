@@ -33,6 +33,16 @@ No service-role key or Supabase access token is required by the app. Never expos
 - Admin member/invitation management, categories, prompts, library, challenges, voting, and meetings.
 - In-app notifications, hourly reminders, Realtime refresh, responsive navigation, and an offline PWA fallback.
 
+## Roles
+
+| Role | Access |
+| --- | --- |
+| Member | Personal reading activity and normal club participation |
+| Moderator | Shared content tools, library, forum moderation, insights, challenges, voting, meetings, prompts, categories, and partner pairing |
+| Admin | All moderator tools plus invitations, member activation, and role assignment |
+
+Admins assign roles in **Admin tools → Members → Role**. A user cannot change their own role from this screen, and the database prevents demoting the last active administrator. Moderators cannot invite users, change account access, or assign roles. Private reading records and reflections remain personal. Administrators and moderators can identify anonymous forum authors for moderation.
+
 ## Database and security
 
 The live schema has already been applied. `supabase/migrations/` is the source of truth. For another project, link it with the Supabase CLI and run `supabase db push`.

@@ -443,7 +443,7 @@ export function ReadingPage() {
       <div className="row between mb-6">
         <div className="pill-row">
           <Goals />
-          {membership.role === "admin" && <AddBook />}
+          {membership.role !== "member" && <AddBook />}
         </div>
         <span className="meta">{stats.totals.books} books completed</span>
       </div>
@@ -533,7 +533,7 @@ export function ReadingPage() {
                     Remove from my list
                   </button>
                 )}
-                {membership.role === "admin" && tab === "library" && (
+                {membership.role !== "member" && tab === "library" && (
                   <EditBook book={book} />
                 )}
               </div>

@@ -140,13 +140,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <User size={18} />
             My profile
           </Link>
-          {member.membership.role === "admin" && (
+          {member.membership.role !== "member" && (
             <Link
               className={`nav-item ${pathname === "/admin" ? "active" : ""}`}
               href="/admin"
             >
               <ShieldCheck size={18} />
-              Admin tools
+              {member.membership.role === "admin"
+                ? "Admin tools"
+                : "Content tools"}
             </Link>
           )}
           <button
@@ -227,14 +229,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   <User size={18} />
                   My profile
                 </Link>
-                {member.membership.role === "admin" && (
+                {member.membership.role !== "member" && (
                   <Link
                     className={`nav-item ${pathname === "/admin" ? "active" : ""}`}
                     href="/admin"
                     onClick={() => setMenuOpen(false)}
                   >
                     <ShieldCheck size={18} />
-                    Admin tools
+                    {member.membership.role === "admin"
+                      ? "Admin tools"
+                      : "Content tools"}
                   </Link>
                 )}
                 <Button
