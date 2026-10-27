@@ -1,6 +1,7 @@
 "use client";
 import { ReactNode, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { InstallGuide } from "@/components/bookcircle/install-guide";
 import { mutateQueries } from "@/lib/supabase/hooks";
 
 export default function SupabaseProvider({
@@ -52,5 +53,10 @@ export default function SupabaseProvider({
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <InstallGuide />
+    </>
+  );
 }

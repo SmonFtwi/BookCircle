@@ -1,4 +1,5 @@
 "use client";
+import { InstallGuideButton } from "./install-guide";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation } from "@/lib/supabase/hooks";
@@ -34,6 +35,7 @@ export function ProfilePage() {
       <PageHeading
         eyebrow="YOUR OWN PACE. YOUR OWN STORY."
         title="My profile"
+        action={<InstallGuideButton />}
         description={`A member of the circle since ${new Date(profile.joinedAt).toLocaleDateString()}`}
       />
       <div className="grid-main">

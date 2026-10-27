@@ -1394,3 +1394,23 @@ th {
   background: #e4eee6;
   box-shadow: inset 0 0 0 1px #a8c4af;
 }
+
+.install-guide {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+}
+.install-steps {
+  list-style: decimal;
+  padding-left: 24px;
+  display: grid;
+  gap: 14px;
+  line-height: 1.65;
+}
+.install-steps li {
+  padding-left: 4px;
+}
+.install-steps li::marker {
+  color: #245c4f;
+  font-weight: 700;
+}
