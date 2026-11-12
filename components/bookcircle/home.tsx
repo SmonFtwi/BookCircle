@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { challengePhase, challengeDate, challengeUnit } from "@/lib/challenges";
 import { useState } from "react";
 import { useQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
@@ -38,11 +39,22 @@ export function HomePage() {
   const nextMeeting = meetings
     ?.filter((x) => x.meeting.endsAt > now)
     .sort((a, b) => a.meeting.startsAt - b.meeting.startsAt)[0]?.meeting;
-  const activeChallenge = challenges?.find(
-    (x) =>
-      x.challenge.startDate <= dayInZone(profile.timezone) &&
-      x.challenge.endDate >= dayInZone(profile.timezone),
-  );
+  const today = dayInZone(profile.timezone);
+  const activeChallenge =
+    challenges?.find(
+      (x) =>
+        x.participationStatus === "invited" &&
+        challengePhase(x.challenge, today) !== "Past",
+    ) ??
+    challenges?.find(
+      (x) => x.joined && challengePhase(x.challenge, today) === "Active",
+    ) ??
+    challenges?.find((x) => challengePhase(x.challenge, today) === "Active") ??
+    challenges
+      ?.filter((x) => challengePhase(x.challenge, today) === "Upcoming")
+      .sort((a, b) =>
+        a.challenge.startDate.localeCompare(b.challenge.startDate),
+      )[0];
   const stats = useQuery(api.reading.stats, {
     today: dayInZone(profile.timezone),
   });
@@ -74,7 +86,7 @@ export function HomePage() {
           day: "numeric",
         }).format(new Date())}
         title={`${greeting}, ${profile.name.split(" ")[0]}.`}
-        description="A new page. A fresh perspective. A little closer to who you want to be."
+        description="Pick up your book, track your progress, and take your next small step."
         action={<LogReading />}
       />
       <div className="grid-main">
@@ -204,47 +216,28 @@ export function HomePage() {
               />
             </div>
           </section>
-          <section className="panel">
-            <div className="section-head">
-              <h2>From the circle</h2>
-              <Link href="/community" className="section-link">
-                View all <ArrowRight size={14} />
-              </Link>
-            </div>
-            {feed?.page.length ? (
-              feed.page.map((item) => (
-                <InsightCard key={item.post._id} item={item} />
-              ))
-            ) : (
-              <Empty
-                title="Good ideas belong here"
-                description="Be the first to share a lesson with your circle."
-                action={
-                  <ShareInsight
-                    trigger={
-                      <Button variant="outline">
-                        Share your first insight
-                      </Button>
-                    }
-                  />
-                }
-              />
-            )}
-          </section>
         </div>
         <aside className="stack">
           {activeChallenge && (
             <section className="panel">
-              <p className="eyebrow">THIS WEEK’S CHALLENGE</p>
+              <p className="eyebrow">
+                {challengePhase(activeChallenge.challenge, today) === "Upcoming"
+                  ? "UP NEXT"
+                  : "YOUR NEXT CHALLENGE"}
+              </p>
               <h2>{activeChallenge.challenge.title}</h2>
               <p className="muted text-sm mt-3">
                 {activeChallenge.challenge.description}
+              </p>
+              <p className="meta mt-3">
+                {challengeDate(activeChallenge.challenge.startDate)} –{" "}
+                {challengeDate(activeChallenge.challenge.endDate)}
               </p>
               <div className="progress-label">
                 <span>
                   {activeChallenge.progress} /{" "}
                   {activeChallenge.challenge.target}{" "}
-                  {activeChallenge.challenge.goalType}
+                  {challengeUnit(activeChallenge.challenge)}
                 </span>
               </div>
               <Meter
@@ -257,7 +250,9 @@ export function HomePage() {
               <Link href="/challenges" className="section-link mt-4">
                 {activeChallenge.joined
                   ? "View challenge"
-                  : "Join the challenge"}{" "}
+                  : activeChallenge.participationStatus === "invited"
+                    ? "Respond to invitation"
+                    : "View challenge"}{" "}
                 →
               </Link>
             </section>
@@ -312,33 +307,7 @@ export function HomePage() {
               Explore club challenges <ArrowRight size={14} />
             </Link>
           </section>
-          <section className="panel">
-            <div className="section-head">
-              <h2>Join the conversation</h2>
-              <MessageCircle size={19} className="text-primary" />
-            </div>
-            {questions?.page.length ? (
-              questions.page.map((q) => (
-                <Link
-                  className="list-item block"
-                  key={q.id}
-                  href={`/forum/${q.id}`}
-                >
-                  <h3>{q.title}</h3>
-                  <p className="meta mt-2">
-                    {q.category} · Awaiting a perspective
-                  </p>
-                </Link>
-              ))
-            ) : (
-              <p className="muted text-sm">
-                A thoughtful question can open up a whole new perspective.
-              </p>
-            )}
-            <Link href="/forum" className="section-link mt-5">
-              Visit the forum <ArrowRight size={14} />
-            </Link>
-          </section>
+
           <section className="panel">
             <div className="row">
               <span className="challenge-icon mb-0">
@@ -359,15 +328,65 @@ export function HomePage() {
               Meetings & book reviews <ArrowRight size={14} />
             </Link>
           </section>
-          <section className="quote-panel">
-            <span className="eyebrow">READ. REFLECT. APPLY.</span>
-            <blockquote>
-              It’s not just the pages we finish. It’s what we take into the
-              world.
-            </blockquote>
-            <cite>Your next small step starts here.</cite>
-          </section>
         </aside>
+      </div>
+      <div className="grid-main home-community">
+        <section className="panel">
+          <div className="section-head">
+            <h2>From the circle</h2>
+            <Link href="/community" className="section-link">
+              View all <ArrowRight size={14} />
+            </Link>
+          </div>
+          {!feed ? (
+            <Loading />
+          ) : feed.page.length ? (
+            feed.page.map((item) => (
+              <InsightCard key={item.post._id} item={item} />
+            ))
+          ) : (
+            <Empty
+              title="Good ideas belong here"
+              description="Be the first to share a lesson with your circle."
+              action={
+                <ShareInsight
+                  trigger={
+                    <Button variant="outline">Share your first insight</Button>
+                  }
+                />
+              }
+            />
+          )}
+        </section>
+        <section className="panel">
+          <div className="section-head">
+            <h2>Join the conversation</h2>
+            <MessageCircle size={19} className="text-primary" />
+          </div>
+          {!questions ? (
+            <Loading />
+          ) : questions.page.length ? (
+            questions.page.map((q) => (
+              <Link
+                className="list-item block"
+                key={q.id}
+                href={`/forum/${q.id}`}
+              >
+                <h3>{q.title}</h3>
+                <p className="meta mt-2">
+                  {q.category} · Awaiting a perspective
+                </p>
+              </Link>
+            ))
+          ) : (
+            <p className="muted text-sm">
+              A thoughtful question can open up a whole new perspective.
+            </p>
+          )}
+          <Link href="/forum" className="section-link mt-5">
+            Visit the forum <ArrowRight size={14} />
+          </Link>
+        </section>
       </div>
     </>
   );

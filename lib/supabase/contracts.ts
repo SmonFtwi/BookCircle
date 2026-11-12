@@ -1,5 +1,32 @@
 // Typed application contracts, independent of the previous backend.
 export type Id<T extends string = string> = string & { readonly __table?: T };
+export type ChallengeCategory =
+  | "reading"
+  | "fitness"
+  | "diet"
+  | "screen_time"
+  | "other";
+export type ChallengeGoal =
+  | "minutes"
+  | "days"
+  | "insights"
+  | "commitments"
+  | "total"
+  | "daily_number"
+  | "daily_checkin";
+export type ChallengeParticipation =
+  | "invited"
+  | "accepted"
+  | "declined"
+  | "revoked";
+export interface ChallengeConfiguration {
+  category: ChallengeCategory;
+  categoryLabel: string | null;
+  participationMode: "open" | "invite_only";
+  unit: string | null;
+  dailyThreshold: number | null;
+  comparison: "minimum" | "maximum" | null;
+}
 type Cursor = string;
 export interface PaginationResult<T> {
   page: T[];
@@ -132,35 +159,86 @@ export interface Contracts {
   "club.challenges": {
     args: Record<string, never>;
     result: {
-      challenge: {
+      challenge: ChallengeConfiguration & {
         _id: Id<"challenges">;
         _creationTime: number;
         description: string;
         clubId: Id<"clubs">;
         createdBy: Id<"profiles">;
         title: string;
-        goalType: "minutes" | "days" | "insights" | "commitments";
+        goalType: ChallengeGoal;
         startDate: string;
         endDate: string;
         target: number;
       };
       joined: boolean;
+      participationStatus: ChallengeParticipation | null;
+      acceptedDate: string | null;
+      invitations: {
+        profileId: Id<"profiles">;
+        name: string;
+        status: ChallengeParticipation;
+      }[];
       progress: number;
       completed: boolean;
       participants: { profileId: Id<"profiles">; name: string }[];
+      leaderboard: {
+        profileId: Id<"profiles">;
+        name: string;
+        rank: number;
+        progress: number;
+      }[];
     }[];
   };
   "club.saveChallenge": {
     args: {
-      id?: Id<"challenges"> | undefined;
+      id?: Id<"challenges">;
       description: string;
       title: string;
-      goalType: "minutes" | "days" | "insights" | "commitments";
-      startDate: string;
-      endDate: string;
-      target: number;
-    };
+      goalType?: ChallengeGoal;
+      startDate?: string;
+      endDate?: string;
+      target?: number;
+      memberIds?: Id<"profiles">[];
+    } & Partial<ChallengeConfiguration>;
     result: Id<"challenges">;
+  };
+  "club.challengeMembers": {
+    args: Record<string, never>;
+    result: { profileId: Id<"profiles">; name: string }[];
+  };
+  "club.inviteChallengeMembers": {
+    args: { id: Id<"challenges">; memberIds: Id<"profiles">[] };
+    result: null;
+  };
+  "club.revokeChallengeInvitation": {
+    args: { id: Id<"challenges">; profileId: Id<"profiles"> };
+    result: null;
+  };
+  "club.respondChallengeInvitation": {
+    args: { id: Id<"challenges">; response: "accepted" | "declined" };
+    result: null;
+  };
+  "club.challengeEntries": {
+    args: { id: Id<"challenges"> };
+    result: {
+      date: string;
+      value: number | null;
+      successful: boolean | null;
+    }[];
+  };
+  "club.saveChallengeEntry": {
+    args: {
+      id: Id<"challenges">;
+      date: string;
+      value?: number;
+      successful?: boolean;
+    };
+    result: null;
+  };
+  "club.deleteChallengeEntry": {
+    args: { id: Id<"challenges">; date: string };
+    result: null;
   };
   "club.joinChallenge": { args: { id: Id<"challenges"> }; result: null };
   "club.weeklyReview": {

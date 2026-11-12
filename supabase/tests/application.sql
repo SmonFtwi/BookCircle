@@ -75,6 +75,10 @@ begin
  perform set_config('request.jwt.claim.sub',member_id::text,true);
  perform public.bookcircle_mutate('club.joinChallenge',jsonb_build_object('id',challenge));
  j=public.bookcircle_query('club.challenges');if not (j->0->>'completed')::boolean then raise exception 'Challenge progress failed';end if;
+ if j->0->'leaderboard'->0->>'profileId'<>member_id::text or (j->0->'leaderboard'->0->>'progress')::int<>30 then raise exception 'Joining did not include existing activity';end if;
+ perform public.bookcircle_mutate('reading.log',jsonb_build_object('bookId',book,'date',current_date,'startPage',25,'endPage',26,'minutes',5,'notes','Still private'));
+ j=public.bookcircle_query('club.challenges');
+ if (j->0->>'progress')::int<>35 or (j->0->'leaderboard'->0->>'progress')::int<>35 then raise exception 'Activity did not refresh progress and leaderboard together';end if;
  perform public.bookcircle_mutate('club.vote',jsonb_build_object('nominationId',nomination));
  perform public.bookcircle_mutate('club.rsvp',jsonb_build_object('meetingId',meeting,'status','going','question','What next?'));
  perform public.bookcircle_mutate('club.reviewBook',jsonb_build_object('meetingId',meeting,'lessons',jsonb_build_array('one','two','three'),'applied','Habit','changed','Focus','improvement','More'));

@@ -75,11 +75,17 @@ export function Meter({ value, label }: { value: number; label?: string }) {
       className="meter"
       role="progressbar"
       aria-label={label || "Progress"}
-      aria-valuenow={Math.round(value)}
+      aria-valuenow={Math.round(
+        Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0)),
+      )}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <span style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+      <span
+        style={{
+          width: `${Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0))}%`,
+        }}
+      />
     </div>
   );
 }
@@ -222,11 +228,11 @@ export function errorText(e: unknown) {
 export function useFeedback() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  async function run(work: () => Promise<unknown>) {
+  async function run(work: () => Promise<unknown>, successMessage = "Saved.") {
     setBusy(true);
     try {
       await work();
-      setMessage("Saved.");
+      setMessage(successMessage);
     } catch (e) {
       setMessage(errorText(e));
     } finally {

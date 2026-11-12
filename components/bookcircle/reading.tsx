@@ -57,15 +57,14 @@ export function LogReading({
   bookId?: Id<"books">;
 }) {
   const [open, setOpen] = useState(false);
-  const [reflect, setReflect] = useState(false);
   const log = useMutation(api.reading.log);
   const { profile } = useMember();
   return (
     <Modal
       open={open}
       onOpenChange={setOpen}
-      title="Make today a reading day."
-      description="A few pages count. Capture your progress, then reflect if you’d like."
+      title="Log your reading"
+      description="Save your pages and minutes. Your reading goals and joined challenges update automatically."
       trigger={
         trigger || (
           <Button>
@@ -137,22 +136,18 @@ export function LogReading({
             <input name="endPage" type="number" min={0} required />
           </Field>
         </div>
-        <Field label="Private notes (optional)">
-          <textarea
-            name="notes"
-            maxLength={5000}
-            placeholder="Something to remember…"
-          />
-        </Field>
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => setReflect(!reflect)}
-        >
-          {reflect ? "Hide reflection" : "Read → Reflect → Apply (optional)"}
-        </button>
-        {reflect && (
-          <>
+        <details className="optional-fields">
+          <summary>
+            Notes, reflection & a next step <span>(optional)</span>
+          </summary>
+          <div className="form-stack">
+            <Field label="Private notes">
+              <textarea
+                name="notes"
+                maxLength={5000}
+                placeholder="Something to remember…"
+              />
+            </Field>
             <Field label="What is one important idea you learned?">
               <textarea name="reflection" maxLength={10000} />
             </Field>
@@ -167,15 +162,18 @@ export function LogReading({
                 placeholder="One small action…"
               />
             </Field>
-            <Field label="Target date">
+            <Field
+              label="Target date"
+              hint="Used only when you add a next step."
+            >
               <input
                 name="targetDate"
                 type="date"
                 defaultValue={dayInZone(profile.timezone)}
               />
             </Field>
-          </>
-        )}
+          </div>
+        </details>
       </ActionForm>
     </Modal>
   );
@@ -581,7 +579,11 @@ export function ReadingPage() {
                   tickLine={false}
                 />
                 <Tooltip />
-                <Bar dataKey="minutes" fill="#245c4f" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="minutes"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
