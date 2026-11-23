@@ -406,7 +406,13 @@ export function ChallengeEntries({ row }: { row: ChallengeRow }) {
     </Modal>
   );
 }
-function EntryEditor({ row }: { row: ChallengeRow }) {
+export function EntryEditor({
+  row,
+  onSuccess,
+}: {
+  row: ChallengeRow;
+  onSuccess?: () => void;
+}) {
   const c = row.challenge;
   const { profile } = useMember();
   const today = dayInZone(profile.timezone);
@@ -446,6 +452,7 @@ function EntryEditor({ row }: { row: ChallengeRow }) {
               </Field>
               <ActionForm
                 key={`${date}:${existing?.value}:${existing?.successful}`}
+                onSuccess={onSuccess}
                 label={existing ? "Update entry" : "Save entry"}
                 onSubmit={(d) =>
                   save({

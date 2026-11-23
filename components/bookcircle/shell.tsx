@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useState, Fragment } from "react";
+import { createContext, useContext, Fragment } from "react";
 import { useQuery, useAuth } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import {
@@ -13,11 +13,9 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
-import { LogReading } from "./reading";
-import { ShareInsight } from "./community";
-import { AskQuestion } from "./forum";
+import { QuickActions, launchQuickAction } from "./quick-actions";
 import { Notifications } from "./notifications";
-import { Logo, Loading, Modal } from "./primitives";
+import { Logo, Loading } from "./primitives";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 type Member = NonNullable<Awaited<ReturnType<typeof api.profiles.me>>>;
@@ -45,7 +43,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth();
   const member = useQuery(api.profiles.me, isAuthenticated ? {} : "skip");
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
   if (isLoading || (isAuthenticated && member === undefined))
     return (
       <main className="content">
@@ -91,7 +88,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <button
           className="quick-action-launch"
           aria-label="Quick actions"
-          onClick={() => setMenuOpen(true)}
+          onClick={() => launchQuickAction()}
         >
           <Plus size={24} />
           <span>Create</span>
@@ -126,7 +123,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <button
                 className="quick-action-launch"
                 aria-label="Quick actions"
-                onClick={() => setMenuOpen(true)}
+                onClick={() => launchQuickAction()}
               >
                 <Plus size={26} />
               </button>
@@ -142,22 +139,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Fragment>
         ))}
       </nav>
-      <Modal
-        title="A little step today"
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-      >
-        <div className="stack quick-action-options">
-          <LogReading />
-          <ShareInsight />
-          <AskQuestion />
-          <Button asChild variant="outline">
-            <Link href="/club/challenges" onClick={() => setMenuOpen(false)}>
-              Challenge check-in
-            </Link>
-          </Button>
-        </div>
-      </Modal>
+      <QuickActions />
     </MemberContext.Provider>
   );
 }

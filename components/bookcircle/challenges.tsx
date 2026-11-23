@@ -1,4 +1,5 @@
 "use client";
+import { ProgressRing, AvatarStack } from "./signature";
 import { useState } from "react";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
@@ -20,7 +21,6 @@ import {
   PageHeading,
   Loading,
   Empty,
-  Meter,
   useFeedback,
   dayInZone,
   Field,
@@ -150,7 +150,7 @@ export function ChallengesPage() {
     </>
   );
 }
-function ChallengeCard({ row }: { row: ChallengeRow }) {
+export function ChallengeCard({ row }: { row: ChallengeRow }) {
   const {
     challenge: c,
     joined,
@@ -210,17 +210,14 @@ function ChallengeCard({ row }: { row: ChallengeRow }) {
             </span>
             <strong>{percent}%</strong>
           </div>
-          <Meter value={percent} label={`Your progress in ${c.title}`} />
+          <ProgressRing value={percent} label={`Your progress in ${c.title}`} />
         </div>
       )}
-      <section
+      <details
         className="leaderboard"
         aria-label={`Top participants in ${c.title}`}
       >
-        <div className="section-head">
-          <h3>Leading the way</h3>
-          <span className="meta">TOP 3</span>
-        </div>
+        <summary>Leading the way · Top 3</summary>
         {leaderboard?.length ? (
           <ol className="leaderboard-list">
             {leaderboard.map((leader) => (
@@ -258,7 +255,7 @@ function ChallengeCard({ row }: { row: ChallengeRow }) {
                   : "Every little step counts. Record your first activity to get things started."}
           </p>
         )}
-      </section>
+      </details>
       <div className="challenge-footer">
         <p className="meta">
           {participants.length}{" "}
@@ -267,6 +264,7 @@ function ChallengeCard({ row }: { row: ChallengeRow }) {
             ? "Member-reported progress"
             : "Updates automatically"}
         </p>
+        <AvatarStack names={participants.map((p) => p.name)} />
         {feedback}
         {!joined &&
           phase !== "Past" &&

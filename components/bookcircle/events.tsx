@@ -280,6 +280,50 @@ function Agenda({ id }: { id: Id<"meetings"> }) {
     </div>
   );
 }
+export function InlineRSVP({
+  meetingId,
+  status,
+  question = "",
+}: {
+  meetingId: Id<"meetings">;
+  status?: "going" | "maybe" | "declined";
+  question?: string;
+}) {
+  const rsvp = useMutation(api.club.rsvp);
+  const { run, busy, feedback } = useFeedback();
+  return (
+    <div>
+      <div
+        className="segment-control rsvp-control"
+        role="group"
+        aria-label="Your RSVP"
+      >
+        {(
+          [
+            ["going", "Going"],
+            ["maybe", "Maybe"],
+            ["declined", "Can’t"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            aria-pressed={status === id}
+            disabled={busy}
+            onClick={() =>
+              run(
+                () => rsvp({ meetingId, status: id, question }),
+                `RSVP saved: ${label}.`,
+              )
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {feedback}
+    </div>
+  );
+}
 export function MeetingsPage() {
   const rows = useQuery(api.club.meetings);
   const rsvp = useMutation(api.club.rsvp);
@@ -325,13 +369,18 @@ export function MeetingsPage() {
                 </div>
               </div>
               <p className="prose">{m.description}</p>
+              <InlineRSVP
+                meetingId={m._id}
+                status={r?.status}
+                question={r?.question}
+              />
               <div className="pill-row mt-5">
                 <Modal
                   title="Save your place"
                   trigger={
                     <Button variant="outline">
                       <Calendar />
-                      {r ? `RSVP: ${r.status}` : "RSVP & submit a question"}
+                      Add discussion question
                     </Button>
                   }
                 >

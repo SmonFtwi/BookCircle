@@ -1,4 +1,5 @@
 "use client";
+import { launchQuickAction } from "./quick-actions";
 import { ForumReactions } from "./forum-reactions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,78 +26,17 @@ import {
   Empty,
   useFeedback,
 } from "./primitives";
-import { BookSelect } from "./reading";
 import { useMember } from "./shell";
 export function AskQuestion({ trigger }: { trigger?: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const categories = useQuery(api.forum.categories);
-  const ask = useMutation(api.forum.ask);
-  return (
-    <Modal
-      title="Every good conversation starts here."
-      description="Ask the circle a question. There’s room for every perspective."
-      open={open}
-      onOpenChange={setOpen}
-      trigger={
-        trigger || (
-          <Button>
-            <Plus />
-            Ask a question
-          </Button>
-        )
-      }
-    >
-      <ActionForm
-        label="Post question"
-        onSuccess={() => setOpen(false)}
-        onSubmit={(d) =>
-          ask({
-            title: value(d, "title"),
-            content: value(d, "content"),
-            categoryId: value(d, "categoryId") as Id<"forumCategories">,
-            anonymous: d.get("anonymous") === "on",
-            ...(value(d, "bookId")
-              ? { bookId: value(d, "bookId") as Id<"books"> }
-              : {}),
-          })
-        }
-      >
-        <Field label="Your question">
-          <input
-            name="title"
-            maxLength={200}
-            required
-            placeholder="What are you wondering about?"
-          />
-        </Field>
-        <Field label="A little context">
-          <textarea name="content" maxLength={10000} required />
-        </Field>
-        <Field label="Category">
-          <select name="categoryId" required>
-            <option value="">Choose a category</option>
-            {categories
-              ?.filter((c) => c.active)
-              .map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-          </select>
-        </Field>
-        <Field label="Related book (optional)">
-          <BookSelect optional />
-        </Field>
-        <label className="check-field">
-          <input name="anonymous" type="checkbox" />
-          Post as Anonymous Member
-        </label>
-        <p className="meta">
-          Anonymous posts hide your identity from other members. Administrators
-          and moderators can identify authors for moderation.
-        </p>
-      </ActionForm>
-    </Modal>
+  return trigger ? (
+    <span onClick={() => launchQuickAction({ action: "question" })}>
+      {trigger}
+    </span>
+  ) : (
+    <Button onClick={() => launchQuickAction({ action: "question" })}>
+      <Plus />
+      Ask a question
+    </Button>
   );
 }
 type Question = NonNullable<Awaited<ReturnType<typeof api.forum.detail>>>;

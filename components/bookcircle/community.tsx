@@ -1,4 +1,5 @@
 "use client";
+import { launchQuickAction } from "./quick-actions";
 import { useState } from "react";
 import { useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
@@ -27,6 +28,19 @@ export function ShareInsight({
   const [open, setOpen] = useState(false);
   const create = useMutation(api.community.create);
   const update = useMutation(api.community.update);
+  if (!existing)
+    return trigger ? (
+      <span onClick={() => launchQuickAction({ action: "note", share: true })}>
+        {trigger}
+      </span>
+    ) : (
+      <Button
+        onClick={() => launchQuickAction({ action: "note", share: true })}
+      >
+        <Plus />
+        Share insight
+      </Button>
+    );
   return (
     <Modal
       open={open}

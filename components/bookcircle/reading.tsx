@@ -1,4 +1,5 @@
 "use client";
+import { launchQuickAction } from "./quick-actions";
 import { useState } from "react";
 import { useQuery, useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
@@ -56,126 +57,15 @@ export function LogReading({
   trigger?: React.ReactNode;
   bookId?: Id<"books">;
 }) {
-  const [open, setOpen] = useState(false);
-  const log = useMutation(api.reading.log);
-  const { profile } = useMember();
-  return (
-    <Modal
-      open={open}
-      onOpenChange={setOpen}
-      title="Log your reading"
-      description="Save your pages and minutes. Your reading goals and joined challenges update automatically."
-      trigger={
-        trigger || (
-          <Button>
-            <Plus />
-            Log reading
-          </Button>
-        )
-      }
-    >
-      <ActionForm
-        label="Save reading session"
-        onSuccess={() => setOpen(false)}
-        onSubmit={async (d) => {
-          await log({
-            bookId: value(d, "bookId") as Id<"books">,
-            date: value(d, "date"),
-            startPage: number(d, "startPage"),
-            endPage: number(d, "endPage"),
-            minutes: number(d, "minutes"),
-            notes: value(d, "notes"),
-            reflection: value(d, "reflection"),
-            shareReflection: d.get("share") === "on",
-            ...(value(d, "commitment")
-              ? {
-                  commitment: {
-                    title: value(d, "commitment"),
-                    targetDate: value(d, "targetDate"),
-                  },
-                }
-              : {}),
-          });
-        }}
-      >
-        <Field label="What did you read?">
-          <BookSelect defaultValue={bookId} />
-        </Field>
-        <div className="field-row">
-          <Field label="Reading date">
-            <input
-              name="date"
-              type="date"
-              defaultValue={dayInZone(profile.timezone)}
-              max={dayInZone(profile.timezone)}
-              required
-            />
-          </Field>
-          <Field label="Minutes read">
-            <input
-              name="minutes"
-              type="number"
-              min={1}
-              max={1440}
-              defaultValue={20}
-              required
-            />
-          </Field>
-        </div>
-        <div className="field-row">
-          <Field label="Page before reading">
-            <input
-              name="startPage"
-              type="number"
-              min={0}
-              defaultValue={0}
-              required
-            />
-          </Field>
-          <Field label="Page reached">
-            <input name="endPage" type="number" min={0} required />
-          </Field>
-        </div>
-        <details className="optional-fields">
-          <summary>
-            Notes, reflection & a next step <span>(optional)</span>
-          </summary>
-          <div className="form-stack">
-            <Field label="Private notes">
-              <textarea
-                name="notes"
-                maxLength={5000}
-                placeholder="Something to remember…"
-              />
-            </Field>
-            <Field label="What is one important idea you learned?">
-              <textarea name="reflection" maxLength={10000} />
-            </Field>
-            <label className="check-field">
-              <input name="share" type="checkbox" />
-              Share this reflection with the club
-            </label>
-            <Field label="How will you apply this lesson?">
-              <input
-                name="commitment"
-                maxLength={200}
-                placeholder="One small action…"
-              />
-            </Field>
-            <Field
-              label="Target date"
-              hint="Used only when you add a next step."
-            >
-              <input
-                name="targetDate"
-                type="date"
-                defaultValue={dayInZone(profile.timezone)}
-              />
-            </Field>
-          </div>
-        </details>
-      </ActionForm>
-    </Modal>
+  return trigger ? (
+    <span onClick={() => launchQuickAction({ action: "reading", bookId })}>
+      {trigger}
+    </span>
+  ) : (
+    <Button onClick={() => launchQuickAction({ action: "reading", bookId })}>
+      <Plus />
+      Log reading
+    </Button>
   );
 }
 export function AddBook() {
