@@ -23,7 +23,7 @@ Legacy reading, forum-list, voting, meetings, challenges, community, accountabil
 
 ## Validation
 
-- Each phase ran `npm run check` and `npm run test:ui`. Next.js occasionally stopped after a security upgrade reminder; retrying the same check completed successfully. Its existing advisory remains unresolved because dependency/security upgrades are outside this UX change.
+- Each phase ran `npm run check` and `npm run test:ui`. Next.js occasionally stopped after a security upgrade reminder; retrying the same check completed successfully. The subsequent [Next.js security upgrade](nextjs-security-upgrade.md) pins Next.js and its ESLint config to 16.4.6 and resolves that framework advisory.
 - Final validation passed: 10 unit tests, production build/typecheck/lint, and 12 browser tests (including the optional original-app capture).
 - Final browser coverage exercises all four tabs, legacy redirects, member/moderator gating, reading defaults and payload, private-note defaults, anonymous-author disclosure, inline RSVP, voting, private entry editing/deletion, drawer check-in, explicit activity refresh, dark-mode persistence, 390px overflow, and browser console/page errors.
 - Production browser tests start their own app on port 3100. `PLAYWRIGHT_BASE_URL` supports an external test server. Installed Chrome was used in this environment through `PLAYWRIGHT_EXECUTABLE_PATH`.
