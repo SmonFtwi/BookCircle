@@ -1,7 +1,6 @@
 "use client";
 import { InstallGuideButton } from "./install-guide";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useQuery, useMutation } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import { authClient } from "@/lib/auth-client";
@@ -17,10 +16,10 @@ import {
 } from "./primitives";
 import { Goals } from "./reading";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, LogOut, Upload } from "lucide-react";
+import { LogOut, Upload } from "lucide-react";
 export function ProfilePage() {
   const router = useRouter();
-  const { profile, membership, avatarUrl } = useMember();
+  const { profile, avatarUrl } = useMember();
   const save = useMutation(api.profiles.update);
   const password = useMutation(api.profiles.changePassword);
   const uploadUrl = useMutation(api.profiles.uploadUrl);
@@ -176,29 +175,6 @@ export function ProfilePage() {
             <div className="mt-5">
               <Goals />
             </div>
-          </section>
-          <section className="panel">
-            <h2 className="mb-4">Your circle</h2>
-            <nav className="side-nav">
-              <Link className="nav-item" href="/community">
-                Community insights →
-              </Link>
-              <Link className="nav-item" href="/meetings">
-                Meetings & reviews →
-              </Link>
-              <Link className="nav-item" href="/voting">
-                Book voting →
-              </Link>
-              <Link className="nav-item" href="/accountability">
-                Accountability →
-              </Link>
-              {membership.role === "admin" && (
-                <Link className="nav-item" href="/admin">
-                  <ShieldCheck size={18} />
-                  Admin tools
-                </Link>
-              )}
-            </nav>
           </section>
           <section className="panel">
             <h2 className="mb-4">Account security</h2>

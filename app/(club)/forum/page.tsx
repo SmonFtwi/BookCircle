@@ -1,2 +1,2 @@
-import { ForumPage } from "@/components/bookcircle/forum";
-export default ForumPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/club/discuss"); }

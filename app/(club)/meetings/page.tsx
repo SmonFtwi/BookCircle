@@ -1,2 +1,2 @@
-import { MeetingsPage } from "@/components/bookcircle/events";
-export default MeetingsPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/club/meetings"); }

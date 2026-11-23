@@ -1,2 +1,2 @@
-import { VotingPage } from "@/components/bookcircle/events";
-export default VotingPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/club/vote"); }

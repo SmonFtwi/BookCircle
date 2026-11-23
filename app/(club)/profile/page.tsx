@@ -1,2 +1,2 @@
-import { ProfilePage } from "@/components/bookcircle/profile";
-export default ProfilePage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/me"); }

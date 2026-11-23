@@ -78,7 +78,7 @@ function AdminContent() {
           </div>
         ))}
       </div>
-      <div className="pill-row mb-6">
+      <div className="pill-row mb-6" id="library">
         <AddBook />
         <CreateChallenge />
         <CreateMeeting />
@@ -90,7 +90,7 @@ function AdminContent() {
           {isAdmin && (
             <>
               {" "}
-              <section className="panel">
+              <section className="panel" id="invitations">
                 <div className="section-head">
                   <h2>Invitation management</h2>
                   <Modal
@@ -203,7 +203,7 @@ function AdminContent() {
                   />
                 )}
               </section>
-              <section className="panel">
+              <section className="panel" id="members">
                 <h2 className="mb-4">Members</h2>
                 <p className="meta mb-4">
                   Moderators manage club content. Only admins can invite
@@ -291,7 +291,7 @@ function AdminContent() {
               </section>
             </>
           )}
-          <section className="panel">
+          <section className="panel" id="moderation">
             <h2 className="mb-4">Reported discussions</h2>
             {reports.length ? (
               reports.map((r) => (
@@ -319,7 +319,7 @@ function AdminContent() {
           </section>
         </div>
         <aside className="stack">
-          <section className="panel">
+          <section className="panel" id="partners">
             <h2 className="mb-4">Accountability partners</h2>
             <ActionForm
               label="Pair members"
@@ -347,7 +347,7 @@ function AdminContent() {
               </p>
             </ActionForm>
           </section>
-          <section className="panel">
+          <section className="panel" id="prompts">
             <h2 className="mb-4">Weekly discussion</h2>
             <ActionForm
               label="Publish prompt"
@@ -363,7 +363,7 @@ function AdminContent() {
               </Field>
             </ActionForm>
           </section>
-          <section className="panel">
+          <section className="panel" id="categories">
             <h2 className="mb-4">Forum categories</h2>
             {categories?.map((c) => (
               <div key={c._id} className="list-item row between">

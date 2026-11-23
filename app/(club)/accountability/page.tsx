@@ -1,2 +1,2 @@
-import { AccountabilityPage } from "@/components/bookcircle/accountability";
-export default AccountabilityPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/me?section=accountability"); }

@@ -1,2 +1,2 @@
-import { ReadingPage } from "@/components/bookcircle/reading";
-export default ReadingPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/library"); }

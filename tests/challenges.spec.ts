@@ -126,6 +126,7 @@ async function mockCircle(
   });
   await page.addInitScript(
     ({ userId, project }) => {
+      localStorage.setItem("bookcircle:install-guide-dismissed:v1", "true");
       const encode = (obj: unknown) =>
         btoa(JSON.stringify(obj))
           .replaceAll("=", "")

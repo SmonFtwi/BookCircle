@@ -1,2 +1,2 @@
-import { ChallengesPage } from "@/components/bookcircle/challenges";
-export default ChallengesPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/club/challenges"); }

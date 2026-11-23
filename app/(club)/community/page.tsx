@@ -1,2 +1,2 @@
-import { CommunityPage } from "@/components/bookcircle/community";
-export default CommunityPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/club/insights"); }

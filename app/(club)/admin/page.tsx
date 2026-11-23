@@ -1,2 +1,2 @@
-import { AdminPage } from "@/components/bookcircle/admin";
-export default AdminPage;
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/me/settings?section=management"); }
