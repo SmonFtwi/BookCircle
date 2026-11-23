@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { launchQuickAction } from "./quick-actions";
 import { useState } from "react";
 import { useQuery, useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
@@ -301,58 +302,67 @@ export function Goals() {
   );
 }
 export function ReadingPage() {
-  const { profile, membership } = useMember();
-  const [tab, setTab] = useState("reading");
+  const { membership } = useMember();
+  const [tab, setTab] = useState("library");
+  const [search, setSearch] = useState("");
+  const [shelf, setShelf] = useState("all");
   const books = useQuery(api.reading.myBooks);
   const library = useQuery(api.reading.library);
-  const stats = useQuery(api.reading.stats, {
-    today: dayInZone(profile.timezone),
-  });
-  const logs = usePaginatedQuery(api.reading.logs, {}, { initialNumItems: 10 });
   const setBook = useMutation(api.reading.setBook);
   const remove = useMutation(api.reading.removeBook);
   const { run, feedback, busy } = useFeedback();
-  if (!books || !library || !stats) return <Loading />;
-  const shown =
+  if (!books || !library) return <Loading />;
+  const shown = (
     tab === "library"
       ? library.map((book) => ({
           book,
           entry: books.find((b) => b.book._id === book._id)?.entry,
         }))
-      : books.filter((b) => tab === "all" || b.entry.status === tab);
+      : books.filter((b) => shelf === "all" || b.entry.status === shelf)
+  ).filter(({ book }) =>
+    `${book.title} ${book.author}`.toLowerCase().includes(search.toLowerCase()),
+  );
   return (
     <>
       <PageHeading
-        eyebrow="ONE PAGE AT A TIME"
-        title="Your reading journey"
-        description="Choose a book from Club library, then use Reading status to add it to your list or move it between shelves."
-        action={<LogReading />}
+        eyebrow="A WORLD BETWEEN THE COVERS"
+        title="Library"
+        description="Find your next good read. Make it your own."
       />
-      <div className="row between mb-6">
-        <div className="pill-row">
-          <Goals />
-          {membership.role !== "member" && <AddBook />}
-        </div>
-        <span className="meta">{stats.totals.books} books completed</span>
-      </div>
-      {feedback}
-      <div className="tabs-row">
+      <Field label="Search books">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Title or author"
+        />
+      </Field>
+      <div
+        className="segment-control mt-4"
+        role="group"
+        aria-label="Library sections"
+      >
         {[
-          ["reading", "Reading"],
-          ["want", "Want to read"],
-          ["completed", "Completed"],
-          ["paused", "Paused"],
-          ["library", "Club library"],
+          ["library", "Club books"],
+          ["shelves", "My shelves"],
         ].map(([id, label]) => (
-          <button
-            className={tab === id ? "active" : ""}
-            key={id}
-            onClick={() => setTab(id)}
-          >
+          <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>
             {label}
           </button>
         ))}
       </div>
+      {tab === "shelves" && (
+        <Field label="Shelf">
+          <select value={shelf} onChange={(e) => setShelf(e.target.value)}>
+            <option value="all">All my books</option>
+            <option value="reading">Reading</option>
+            <option value="want">Want to read</option>
+            <option value="completed">Completed</option>
+            <option value="paused">Paused</option>
+          </select>
+        </Field>
+      )}
+      {feedback}
       {shown.length ? (
         <div className="library-grid">
           {shown.map(({ book, entry }) => (
@@ -364,7 +374,9 @@ export function ReadingPage() {
               />
               <div>
                 <span className="tag">{book.category}</span>
-                <h3 className="mt-2">{book.title}</h3>
+                <Link href={`/library/${book._id}`}>
+                  <h3 className="mt-2">{book.title} →</h3>
+                </Link>
                 <p>{book.author}</p>
                 <div className="progress-label">
                   <span>
@@ -406,12 +418,6 @@ export function ReadingPage() {
                     <option value="completed">Completed</option>
                   </select>
                 </Field>
-                <div className="mt-3">
-                  <LogReading
-                    bookId={book._id}
-                    trigger={<Button variant="outline">Log reading</Button>}
-                  />
-                </div>
                 {entry && (
                   <button
                     className="text-button mt-2"
@@ -452,6 +458,21 @@ export function ReadingPage() {
           />
         </div>
       )}
+    </>
+  );
+}
+
+export function ReadingHistory() {
+  const { profile } = useMember();
+  const library = useQuery(api.reading.library);
+  const stats = useQuery(api.reading.stats, {
+    today: dayInZone(profile.timezone),
+  });
+  const logs = usePaginatedQuery(api.reading.logs, {}, { initialNumItems: 10 });
+  if (!library || !stats) return <Loading />;
+  return (
+    <>
+      {" "}
       <div className="grid-main spaced">
         <section className="panel">
           <div className="section-head">

@@ -1,4 +1,5 @@
 "use client";
+import { Onboarding } from "./onboarding";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -185,6 +186,7 @@ export function HomePage() {
     .slice(0, 2);
   return (
     <>
+      <Onboarding />
       <PageHeading
         eyebrow={new Intl.DateTimeFormat("en", {
           timeZone: profile.timezone,

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { ReadingHistory } from "./reading";
 import { AppearanceSettings } from "./appearance";
 import { ForumPage } from "./forum";
 import { CommunityPage } from "./community";
@@ -85,7 +86,10 @@ function MeContent() {
       {params.get("section") === "accountability" ? (
         <AccountabilityPage />
       ) : (
-        <ProfilePage />
+        <>
+          <ProfilePage />
+          <ReadingHistory />
+        </>
       )}
     </>
   );
@@ -107,6 +111,7 @@ function SettingsContent() {
       </Link>
       <PageHeading title="Settings" description="Make yourself at home." />
       <AppearanceSettings />
+      <ProfilePage settings />
       {membership.role !== "member" && (
         <section className="panel">
           <h2>Club management</h2>
@@ -134,13 +139,6 @@ function SettingsContent() {
       )}
       {params.get("section") === "management" &&
         membership.role !== "member" && <AdminPage />}
-      <p className="muted mt-6">
-        Account details, password and sign out are available in{" "}
-        <Link className="section-link" href="/me">
-          Me
-        </Link>
-        .
-      </p>
     </>
   );
 }
