@@ -1,81 +1,188 @@
 "use client";
 import Link from "next/link";
-import { challengePhase, challengeDate, challengeUnit } from "@/lib/challenges";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Calendar,
+  ArrowRight,
+  Vote,
+  MessageCircle,
+  Feather,
+} from "lucide-react";
 import { useQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
-import {
-  Flame,
-  Clock,
-  BookOpen,
-  Plus,
-  Lightbulb,
-  MessageCircle,
-  ArrowRight,
-  Sprout,
-  Calendar,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useMember } from "./shell";
+import { Button } from "@/components/ui/button";
 import {
-  PageHeading,
-  Loading,
-  Empty,
   Cover,
-  Meter,
+  Empty,
+  Loading,
+  PageHeading,
   dayInZone,
+  errorText,
 } from "./primitives";
-import { LogReading } from "./reading";
-import { ShareInsight, InsightCard } from "./community";
-import { AskQuestion } from "./forum";
-import { AddCommitment } from "./accountability";
+import { ProgressRing, StreakRibbon } from "./signature";
+import { launchQuickAction } from "./quick-actions";
+import { InsightCard } from "./community";
+import { InlineRSVP } from "./events";
+import { challengePhase } from "@/lib/challenges";
+type Insights = Awaited<ReturnType<typeof api.community.feed>>;
+type Questions = Awaited<ReturnType<typeof api.forum.list>>;
+function ActivityFeed() {
+  const [count, setCount] = useState(6);
+  const [revision, setRevision] = useState(0);
+  const [fresh, setFresh] = useState(false);
+  const [data, setData] = useState<{
+    insights: Insights;
+    questions: Questions;
+  }>();
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const notify = () => setFresh(true);
+    window.addEventListener("bookcircle:new-activity", notify);
+    return () => window.removeEventListener("bookcircle:new-activity", notify);
+  }, []);
+  useEffect(() => {
+    let live = true;
+    const paginationOpts = { numItems: count, cursor: null };
+    Promise.all([
+      api.community.feed({ paginationOpts }),
+      api.forum.list({ mode: "recent", paginationOpts }),
+    ])
+      .then(([insights, questions]) => {
+        if (live) {
+          setData({ insights, questions });
+          setError("");
+        }
+      })
+      .catch((e) => {
+        if (live) setError(errorText(e));
+      });
+    return () => {
+      live = false;
+    };
+  }, [count, revision]);
+  const items = data
+    ? [
+        ...data.insights.page.map((item) => ({
+          id: `insight-${item.post._id}`,
+          time: item.post._creationTime,
+          content: <InsightCard item={item} />,
+        })),
+        ...data.questions.page.map((q) => ({
+          id: `question-${q.id}`,
+          time: q.createdAt,
+          content: (
+            <article className="feed-card">
+              <div className="author-row">
+                <span className="avatar" aria-hidden="true">
+                  {q.author.name.slice(0, 1)}
+                </span>
+                <div>
+                  <strong>{q.author.name}</strong>
+                  <p className="meta">
+                    Started a conversation ·{" "}
+                    {new Date(q.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <Link href={`/forum/${q.id}`}>
+                <h3>{q.title}</h3>
+              </Link>
+              <p className="meta mt-3">
+                {q.category} · {q.answerCount} answers
+              </p>
+              <Link className="section-link mt-3" href={`/forum/${q.id}`}>
+                Join the conversation <ArrowRight size={16} />
+              </Link>
+            </article>
+          ),
+        })),
+      ]
+        .sort((a, b) => b.time - a.time)
+        .slice(0, count)
+    : [];
+  return (
+    <section className="stack" aria-label="Club activity">
+      <div className="section-head">
+        <h2>From your circle</h2>
+        <Feather size={20} className="text-primary" />
+      </div>
+      {fresh && (
+        <Button
+          className="new-activity"
+          variant="outline"
+          onClick={() => {
+            setRevision((r) => r + 1);
+            setFresh(false);
+          }}
+        >
+          New activity ↑
+        </Button>
+      )}
+      {error && (
+        <div role="alert" className="panel">
+          <p>{error}</p>
+          <Button variant="outline" onClick={() => setRevision((r) => r + 1)}>
+            Try again
+          </Button>
+        </div>
+      )}
+      {!data ? (
+        <Loading />
+      ) : items.length ? (
+        <>
+          {items.map((item) => (
+            <div key={item.id}>{item.content}</div>
+          ))}
+          {(!data.insights.isDone ||
+            !data.questions.isDone ||
+            data.insights.page.length + data.questions.page.length > count) && (
+            <Button variant="outline" onClick={() => setCount((n) => n + 6)}>
+              Load more
+            </Button>
+          )}
+        </>
+      ) : (
+        <div className="panel">
+          <Empty
+            title="Every circle starts with a conversation"
+            description="Share a thought from your latest read. Someone might need to hear it."
+            action={
+              <Button
+                variant="outline"
+                onClick={() =>
+                  launchQuickAction({ action: "note", share: true })
+                }
+              >
+                Share an insight
+              </Button>
+            }
+          />
+        </div>
+      )}
+    </section>
+  );
+}
 export function HomePage() {
   const { profile } = useMember();
   const [now] = useState(() => Date.now());
-  const books = useQuery(api.reading.myBooks);
-  const commitments = useQuery(api.club.commitments);
-  const challenges = useQuery(api.club.challenges);
-  const meetings = useQuery(api.club.meetings);
-  const nextMeeting = meetings
-    ?.filter((x) => x.meeting.endsAt > now)
-    .sort((a, b) => a.meeting.startsAt - b.meeting.startsAt)[0]?.meeting;
   const today = dayInZone(profile.timezone);
-  const activeChallenge =
-    challenges?.find(
-      (x) =>
-        x.participationStatus === "invited" &&
-        challengePhase(x.challenge, today) !== "Past",
-    ) ??
-    challenges?.find(
-      (x) => x.joined && challengePhase(x.challenge, today) === "Active",
-    ) ??
-    challenges?.find((x) => challengePhase(x.challenge, today) === "Active") ??
-    challenges
-      ?.filter((x) => challengePhase(x.challenge, today) === "Upcoming")
-      .sort((a, b) =>
-        a.challenge.startDate.localeCompare(b.challenge.startDate),
-      )[0];
-  const stats = useQuery(api.reading.stats, {
-    today: dayInZone(profile.timezone),
-  });
-  const feed = useQuery(api.community.feed, {
-    paginationOpts: { numItems: 3, cursor: null },
-  });
-  const questions = useQuery(api.forum.list, {
-    mode: "unanswered",
-    paginationOpts: { numItems: 3, cursor: null },
-  });
-  const hour = Number(
-    new Intl.DateTimeFormat("en", {
-      hour: "numeric",
-      hourCycle: "h23",
-      timeZone: profile.timezone,
-    }).format(new Date()),
-  );
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  if (!books || !stats) return <Loading />;
+  const stats = useQuery(api.reading.stats, { today });
+  const books = useQuery(api.reading.myBooks);
+  const meetings = useQuery(api.club.meetings);
+  const rounds = useQuery(api.club.votingRounds, { now });
+  const challenges = useQuery(api.club.challenges);
+  if (!stats || !books) return <Loading />;
   const current = books.find((b) => b.entry.status === "reading");
+  const next = meetings
+    ?.filter((m) => m.meeting.endsAt > now)
+    .sort((a, b) => a.meeting.startsAt - b.meeting.startsAt)[0];
+  const vote = rounds?.find(
+    (r) => r.round.status === "open" && r.round.deadline > now,
+  );
+  const active = challenges
+    ?.filter((r) => r.joined && challengePhase(r.challenge, today) === "Active")
+    .slice(0, 2);
   return (
     <>
       <PageHeading
@@ -85,308 +192,135 @@ export function HomePage() {
           month: "long",
           day: "numeric",
         }).format(new Date())}
-        title={`${greeting}, ${profile.name.split(" ")[0]}.`}
-        description="Pick up your book, track your progress, and take your next small step."
-        action={<LogReading />}
+        title={`A little further, ${profile.name.split(" ")[0]}.`}
+        description="A few pages. A good conversation. Your circle."
       />
-      <div className="grid-main">
-        <div className="stack">
-          <section className="hero-card">
-            <p className="eyebrow">YOUR CURRENT CHAPTER</p>
-            {current ? (
-              <div className="hero-book">
-                <Cover
-                  title={current.book.title}
-                  author={current.book.author}
-                  coverUrl={current.book.coverUrl}
-                />
-                <div className="hero-info">
-                  <h2>{current.book.title}</h2>
-                  <p>by {current.book.author}</p>
-                  <div className="progress-label">
-                    <span>
-                      Page {current.entry.currentPage} of{" "}
-                      {current.book.totalPages}
-                    </span>
-                    <strong>
-                      {Math.round(
-                        (current.entry.currentPage / current.book.totalPages) *
-                          100,
-                      )}
-                      % complete
-                    </strong>
-                  </div>
-                  <Meter
-                    value={
-                      (current.entry.currentPage / current.book.totalPages) *
-                      100
-                    }
-                  />
-                  <LogReading
-                    bookId={current.book._id}
-                    trigger={
-                      <Button>
-                        Continue reading <ArrowRight />
-                      </Button>
-                    }
-                  />
-                </div>
-              </div>
-            ) : (
-              <Empty
-                title="Make room for your next good book"
-                description="Choose a book from your club library and turn the first page."
-                action={
-                  <Button asChild>
-                    <Link href="/reading">
-                      Explore your library <ArrowRight />
-                    </Link>
-                  </Button>
-                }
-              />
-            )}
-          </section>
-          <div className="stat-grid">
-            <div className="stat-card">
-              <div className="stat-top">
-                Reading streak <Flame size={17} />
-              </div>
-              <p className="stat-number">
-                {stats.streak} <small>days</small>
+      <div className="stack home-feed">
+        <section className="panel streak-card">
+          <div className="row between">
+            <div>
+              <p className="eyebrow">YOUR READING RHYTHM</p>
+              <h2>You’re on a {stats.streak}-day streak.</h2>
+              <p className="muted">
+                {stats.week.minutes} of {stats.goals.minutes} minutes this week
               </p>
-              <span className="stat-caption">One day at a time</span>
             </div>
-            <div className="stat-card">
-              <div className="stat-top">
-                This week <Clock size={17} />
-              </div>
-              <p className="stat-number">
-                {stats.week.minutes} <small>min</small>
-              </p>
-              <span className="stat-caption">
-                of {stats.goals.minutes} min goal
-              </span>
-            </div>
-            <div className="stat-card">
-              <div className="stat-top">
-                Books finished <BookOpen size={17} />
-              </div>
-              <p className="stat-number">
-                {stats.totals.books} <small>books</small>
-              </p>
-              <span className="stat-caption">Lessons to carry with you</span>
-            </div>
-          </div>
-          <section>
-            <div className="section-head">
-              <h2>A little something today</h2>
-            </div>
-            <div className="quick-grid">
-              <LogReading
-                trigger={
-                  <button className="quick-button">
-                    <Plus size={21} />
-                    Log reading
-                  </button>
-                }
-              />
-              <ShareInsight
-                trigger={
-                  <button className="quick-button">
-                    <Lightbulb size={21} />
-                    Share insight
-                  </button>
-                }
-              />
-              <AskQuestion
-                trigger={
-                  <button className="quick-button">
-                    <MessageCircle size={21} />
-                    Ask a question
-                  </button>
-                }
-              />
-              <AddCommitment
-                trigger={
-                  <button className="quick-button">
-                    <Sprout size={21} />
-                    Add commitment
-                  </button>
-                }
-              />
-            </div>
-          </section>
-        </div>
-        <aside className="stack">
-          {activeChallenge && (
-            <section className="panel">
-              <p className="eyebrow">
-                {challengePhase(activeChallenge.challenge, today) === "Upcoming"
-                  ? "UP NEXT"
-                  : "YOUR NEXT CHALLENGE"}
-              </p>
-              <h2>{activeChallenge.challenge.title}</h2>
-              <p className="muted text-sm mt-3">
-                {activeChallenge.challenge.description}
-              </p>
-              <p className="meta mt-3">
-                {challengeDate(activeChallenge.challenge.startDate)} –{" "}
-                {challengeDate(activeChallenge.challenge.endDate)}
-              </p>
-              <div className="progress-label">
-                <span>
-                  {activeChallenge.progress} /{" "}
-                  {activeChallenge.challenge.target}{" "}
-                  {challengeUnit(activeChallenge.challenge)}
-                </span>
-              </div>
-              <Meter
-                value={
-                  (activeChallenge.progress /
-                    activeChallenge.challenge.target) *
-                  100
-                }
-              />
-              <Link href="/challenges" className="section-link mt-4">
-                {activeChallenge.joined
-                  ? "View challenge"
-                  : activeChallenge.participationStatus === "invited"
-                    ? "Respond to invitation"
-                    : "View challenge"}{" "}
-                →
-              </Link>
-            </section>
-          )}
-          {commitments?.some((c) => c.status === "pending") && (
-            <section className="panel">
-              <h2>Ideas into action</h2>
-              {commitments
-                .filter((c) => c.status === "pending")
-                .slice(0, 3)
-                .map((c) => (
-                  <Link
-                    key={c._id}
-                    className="list-item block"
-                    href="/accountability"
-                  >
-                    <h3>{c.title}</h3>
-                    <p className="meta">Due {c.targetDate}</p>
-                  </Link>
-                ))}
-            </section>
-          )}
-          <section className="panel">
-            <div className="section-head">
-              <h2>Your weekly rhythm</h2>
-              <span className="tag">THIS WEEK</span>
-            </div>
-            <p className="muted text-sm mb-5">
-              A little consistency makes a difference.
-            </p>
-            <div className="progress-label">
-              <span>Reading days</span>
-              <strong>
-                {stats.week.days} / {stats.goals.days}
-              </strong>
-            </div>
-            <Meter value={(stats.week.days / stats.goals.days) * 100} />
-            <div className="progress-label mt-5">
-              <span>Pages read</span>
-              <strong>
-                {stats.week.pages} / {stats.goals.pages}
-              </strong>
-            </div>
-            <Meter
+            <ProgressRing
               value={
-                stats.goals.pages
-                  ? (stats.week.pages / stats.goals.pages) * 100
+                stats.goals.minutes
+                  ? (stats.week.minutes / stats.goals.minutes) * 100
                   : 0
               }
+              label="Weekly reading goal"
             />
-            <Link href="/challenges" className="section-link mt-6">
-              Explore club challenges <ArrowRight size={14} />
+          </div>
+          <div className="row between mt-5">
+            <Button onClick={() => launchQuickAction({ action: "reading" })}>
+              Log reading <ArrowRight size={18} />
+            </Button>
+            <StreakRibbon>{stats.streak} days</StreakRibbon>
+          </div>
+        </section>
+        {!meetings ? (
+          <Loading />
+        ) : (
+          next && (
+            <section className="panel meeting-feed-card">
+              <div className="section-head">
+                <span className="eyebrow">NEXT GATHERING</span>
+                <Calendar size={20} className="text-primary" />
+              </div>
+              <h2>{next.meeting.title}</h2>
+              <p className="meta mt-3">
+                {new Date(next.meeting.startsAt).toLocaleString(undefined, {
+                  timeZone: profile.timezone,
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}{" "}
+                · {next.meeting.location}
+              </p>
+              <InlineRSVP
+                meetingId={next.meeting._id}
+                status={next.rsvp?.status}
+                question={next.rsvp?.question}
+              />
+              <Link className="section-link mt-3" href="/club/meetings">
+                Meeting details <ArrowRight size={16} />
+              </Link>
+            </section>
+          )
+        )}
+        {vote && (
+          <section className="panel">
+            <div className="section-head">
+              <span className="eyebrow">OUR NEXT CHAPTER</span>
+              <Vote size={20} className="text-primary" />
+            </div>
+            <h2>{vote.round.title}</h2>
+            <p className="muted mt-2">
+              Vote closes in{" "}
+              {Math.max(1, Math.ceil((vote.round.deadline - now) / 86400000))}{" "}
+              days.
+            </p>
+            <Link className="section-link mt-4" href="/club/vote">
+              {vote.myVote ? "See your vote" : "Vote"} <ArrowRight size={16} />
             </Link>
           </section>
-
-          <section className="panel">
-            <div className="row">
-              <span className="challenge-icon mb-0">
-                <Calendar size={21} />
-              </span>
+        )}
+        {active?.map((row) => (
+          <article className="panel" key={row.challenge._id}>
+            <div className="row between">
               <div>
-                <h3>{nextMeeting?.title ?? "Make time for your circle"}</h3>
-                <p className="meta">
-                  {nextMeeting
-                    ? new Date(nextMeeting.startsAt).toLocaleString(undefined, {
-                        timeZone: profile.timezone,
-                      })
-                    : "Conversations beyond the page."}
+                <p className="eyebrow">A SMALL DAILY STEP</p>
+                <h2>{row.challenge.title}</h2>
+                <p className="muted">
+                  {row.progress} of {row.challenge.target} ·{" "}
+                  {row.completed
+                    ? "Goal reached. Well done!"
+                    : "Keep your promise to yourself."}
                 </p>
               </div>
+              <ProgressRing
+                value={(row.progress / row.challenge.target) * 100}
+                label={`Your progress in ${row.challenge.title}`}
+                size={64}
+              />
             </div>
-            <Link href="/meetings" className="section-link mt-5">
-              Meetings & book reviews <ArrowRight size={14} />
-            </Link>
-          </section>
-        </aside>
-      </div>
-      <div className="grid-main home-community">
-        <section className="panel">
-          <div className="section-head">
-            <h2>From the circle</h2>
-            <Link href="/community" className="section-link">
-              View all <ArrowRight size={14} />
-            </Link>
-          </div>
-          {!feed ? (
-            <Loading />
-          ) : feed.page.length ? (
-            feed.page.map((item) => (
-              <InsightCard key={item.post._id} item={item} />
-            ))
-          ) : (
-            <Empty
-              title="Good ideas belong here"
-              description="Be the first to share a lesson with your circle."
-              action={
-                <ShareInsight
-                  trigger={
-                    <Button variant="outline">Share your first insight</Button>
-                  }
-                />
-              }
+            <button
+              className="section-link mt-4"
+              onClick={() => launchQuickAction({ action: "checkin" })}
+            >
+              Check in today <ArrowRight size={16} />
+            </button>
+          </article>
+        ))}
+        {current && (
+          <section className="panel current-chapter">
+            <Cover
+              small
+              title={current.book.title}
+              author={current.book.author}
+              coverUrl={current.book.coverUrl}
             />
-          )}
-        </section>
-        <section className="panel">
-          <div className="section-head">
-            <h2>Join the conversation</h2>
-            <MessageCircle size={19} className="text-primary" />
-          </div>
-          {!questions ? (
-            <Loading />
-          ) : questions.page.length ? (
-            questions.page.map((q) => (
-              <Link
-                className="list-item block"
-                key={q.id}
-                href={`/forum/${q.id}`}
-              >
-                <h3>{q.title}</h3>
-                <p className="meta mt-2">
-                  {q.category} · Awaiting a perspective
-                </p>
+            <div>
+              <p className="eyebrow">ON YOUR NIGHTSTAND</p>
+              <h2>{current.book.title}</h2>
+              <p className="meta">
+                {current.book.author} · Page {current.entry.currentPage} of{" "}
+                {current.book.totalPages}
+              </p>
+              <Link className="section-link" href="/library">
+                Your shelves <ArrowRight size={16} />
               </Link>
-            ))
-          ) : (
-            <p className="muted text-sm">
-              A thoughtful question can open up a whole new perspective.
-            </p>
-          )}
-          <Link href="/forum" className="section-link mt-5">
-            Visit the forum <ArrowRight size={14} />
-          </Link>
-        </section>
+            </div>
+          </section>
+        )}
+        <ActivityFeed />
+        <Link className="section-link" href="/club/discuss">
+          <MessageCircle size={18} /> All conversations <ArrowRight size={16} />
+        </Link>
       </div>
     </>
   );

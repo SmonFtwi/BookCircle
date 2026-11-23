@@ -20,7 +20,7 @@ export default function SupabaseProvider({
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "club_revisions" },
-        mutateQueries,
+        () => window.dispatchEvent(new Event("bookcircle:new-activity")),
       )
       .subscribe();
     const timer = setInterval(mutateQueries, 60000);

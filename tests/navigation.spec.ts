@@ -17,7 +17,11 @@ test("four tabs, legacy redirects, and member management isolation", async ({
     ["Club", "/club/discuss"],
     ["Me", "/me"],
   ]) {
-    await test.step(`Navigate to ${name}`, async () => { await nav.getByRole("link", { name, exact: true }).click({timeout: 5000}); });
+    await test.step(`Navigate to ${name}`, async () => {
+      await nav
+        .getByRole("link", { name, exact: true })
+        .click({ timeout: 5000 });
+    });
     await expect(page).toHaveURL(new RegExp(`${path}$`));
     await expect(nav.getByRole("link", { name, exact: true })).toHaveAttribute(
       "aria-current",
