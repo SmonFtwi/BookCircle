@@ -1,5 +1,6 @@
 "use client";
 import { useState, type ReactNode, type FormEvent } from "react";
+import Image from "next/image";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, BookOpen, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -103,12 +104,25 @@ export function Cover({
   return (
     <div
       className={`book-cover ${small ? "small" : ""}`}
-      style={
-        coverUrl
-          ? { backgroundImage: `url(${JSON.stringify(coverUrl).slice(1, -1)})` }
-          : undefined
-      }
+      style={{
+        backgroundColor: ["#2F5D50", "#663E32", "#514B37", "#4E455B"][
+          Array.from(title).reduce(
+            (hash, char) => hash + char.charCodeAt(0),
+            0,
+          ) % 4
+        ],
+      }}
     >
+      {coverUrl && (
+        <Image
+          src={coverUrl}
+          alt={`${title} cover`}
+          fill
+          unoptimized
+          sizes={small ? "64px" : "128px"}
+          style={{ objectFit: "cover" }}
+        />
+      )}
       {!coverUrl && (
         <>
           <BookOpen size={small ? 18 : 27} />

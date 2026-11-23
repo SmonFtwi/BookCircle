@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
+import { AppearanceProvider } from "@/components/bookcircle/appearance";
 import SupabaseProvider from "@/components/SupabaseProvider";
 import "./globals.css";
 
@@ -52,9 +53,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${body.variable} ${display.variable} antialiased`}>
-        <SupabaseProvider>{children}</SupabaseProvider>
+        <AppearanceProvider>
+          <SupabaseProvider>{children}</SupabaseProvider>
+        </AppearanceProvider>
       </body>
     </html>
   );

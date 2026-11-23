@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { AppearanceSettings } from "./appearance";
 import { ForumPage } from "./forum";
 import { CommunityPage } from "./community";
 import { MeetingsPage, VotingPage } from "./events";
@@ -105,6 +106,7 @@ function SettingsContent() {
         ← Me
       </Link>
       <PageHeading title="Settings" description="Make yourself at home." />
+      <AppearanceSettings />
       {membership.role !== "member" && (
         <section className="panel">
           <h2>Club management</h2>
