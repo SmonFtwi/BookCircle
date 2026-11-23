@@ -72,3 +72,5 @@ GEMINI.md
 *.swp
 *.swo
 *~
+
+/docs/tutorial
