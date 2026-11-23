@@ -15,7 +15,7 @@ Warm literary reading room: paper, ink, deep green, terracotta, Fraunces heading
 | Club: Vote | Nominations, voting and change of choice under existing rules, deadlines and results; manager round controls |
 | Club: Meetings | Inline RSVP, optional discussion question, three-lesson reviews; manager scheduling and agenda |
 | Club: Challenges | Status/category/participation filters, join/invitation responses, private entries with editing/deletion, collapsed top-three leaderboard; manager creation and invitations |
-| Me | Private reflections and reading notes, stats, goals, reading rhythm/history; commitments, weekly reviews and accountability partner |
+| Me | Profile summary and totals; separate Private notes, Reading history, and Commitments & partner destinations; weekly goal and streak |
 | Me: Settings | Profile/avatar, timezone, existing privacy and notification preferences, password, sign out, installation guide, automatic/light/dark appearance |
 | Settings: Club management | Library, prompts, categories, partner pairing, moderation for managers; members and invitations remain admin only |
 
@@ -48,3 +48,5 @@ The six branches are stacked in phase order. Review and merge decisions remain w
 | 4 | `ux/phase-4-home-feed` | [Home feed](reviews/phase-4.md) |
 | 5 | `ux/phase-5-tab-screens` | [Tab screens](reviews/phase-5.md) |
 | 6 | `ux/phase-6-polish` | [Polish](reviews/phase-6.md) |
+
+The subsequent [section design refinement](section-design-refinement.md) simplifies Library cards, Club filters, and the profile hierarchy.

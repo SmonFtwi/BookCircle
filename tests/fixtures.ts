@@ -59,6 +59,26 @@ export async function mockCircle(
     category: "Everyday wonder",
     description: "Small practices for a more attentive life.",
   };
+  const library = [
+    book,
+    {
+      ...book,
+      _id: "30000000-0000-0000-0000-000000000002",
+      title: "Atomic Habits",
+      author: "James Clear",
+      totalPages: 320,
+      category: "Personal Growth",
+    },
+    {
+      ...book,
+      _id: "30000000-0000-0000-0000-000000000003",
+      title: "Deep Work: Rules for Focused Success in a Distracted World",
+      author: "Cal Newport",
+      totalPages: 304,
+      category: "Focus & intention",
+    },
+  ];
+  const shelves = new Map([[book._id, "reading"]]);
   const logs: Record<string, unknown>[] = [];
   const meeting = {
     meeting: {
@@ -98,6 +118,9 @@ export async function mockCircle(
       let result: unknown = null;
       if (url.includes("bookcircle_mutate")) {
         calls.push({ operation, args });
+        if (operation === "reading.setBook")
+          shelves.set(args.bookId, args.status);
+        if (operation === "reading.removeBook") shelves.delete(args.bookId);
         if (operation === "reading.log")
           logs.unshift({
             _id: `log-${logs.length}`,
@@ -169,17 +192,18 @@ export async function mockCircle(
         ];
       else if (operation === "club.challengeEntries") result = entries;
       else if (operation === "notifications.list") result = [];
-      else if (operation === "reading.library") result = [book];
+      else if (operation === "reading.library") result = library;
       else if (operation === "reading.myBooks")
-        result = [
-          {
-            book,
+        result = library
+          .filter((b) => shelves.has(b._id))
+          .map((b) => ({
+            book: b,
             entry: {
-              status: "reading",
-              currentPage: Number(logs[0]?.endPage ?? 42),
+              status: shelves.get(b._id),
+              currentPage:
+                b._id === book._id ? Number(logs[0]?.endPage ?? 42) : 0,
             },
-          },
-        ];
+          }));
       else if (operation === "reading.stats")
         result = {
           streak: 5 + logs.length,
@@ -201,7 +225,15 @@ export async function mockCircle(
         };
       else if (operation === "reading.logs")
         result = { page: logs, isDone: true, continueCursor: "" };
-      else if (operation === "reading.reflections") result = [];
+      else if (operation === "reading.reflections")
+        result = logs
+          .filter((log) => log.reflection)
+          .map((log, index) => ({
+            _id: `note-${index}`,
+            bookId: log.bookId,
+            date: log.date,
+            body: log.reflection,
+          }));
       else if (operation === "community.feed")
         result = {
           page: [
@@ -248,11 +280,26 @@ export async function mockCircle(
       else if (operation === "club.meetings") result = [meeting];
       else if (operation === "club.votingRounds") result = [voting];
       else if (operation === "club.commitments") result = [];
+      else if (
+        operation === "club.partner" ||
+        operation === "club.weeklyReview"
+      )
+        result = null;
       else if (operation === "forum.categories")
         result = [
           {
             _id: "70000000-0000-0000-0000-000000000001",
             name: "Book talk",
+            active: true,
+          },
+          {
+            _id: "70000000-0000-0000-0000-000000000002",
+            name: "Putting ideas into practice",
+            active: true,
+          },
+          {
+            _id: "70000000-0000-0000-0000-000000000003",
+            name: "Questions & support",
             active: true,
           },
         ];
@@ -303,7 +350,7 @@ export async function mockCircle(
     },
     { userId, project: projectRef },
   );
-  await page.goto("/challenges");
+  await page.goto("/club/challenges");
   await expect(
     page.getByRole("heading", { name: "Less screen time", exact: true }),
   ).toBeVisible();

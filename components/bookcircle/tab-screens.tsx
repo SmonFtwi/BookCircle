@@ -2,29 +2,40 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import {
+  MessageCircle,
+  Vote,
+  CalendarDays,
+  Trophy,
+  ArrowLeft,
+} from "lucide-react";
 import { ReadingHistory } from "./reading";
 import { AppearanceSettings } from "./appearance";
 import { ForumPage } from "./forum";
 import { CommunityPage } from "./community";
 import { MeetingsPage, VotingPage } from "./events";
 import { ChallengesPage } from "./challenges";
-import { ProfilePage } from "./profile";
+import { ProfileOverview, ProfileSettings, PrivateNotes } from "./profile";
 import { AccountabilityPage } from "./accountability";
 import { AdminPage } from "./admin";
 import { useMember } from "./shell";
 import { Loading, PageHeading } from "./primitives";
 
 const sections = [
-  ["discuss", "Discuss"],
-  ["vote", "Vote"],
-  ["meetings", "Meetings"],
-  ["challenges", "Challenges"],
-];
+  ["discuss", "Discuss", MessageCircle],
+  ["vote", "Vote", Vote],
+  ["meetings", "Meetings", CalendarDays],
+  ["challenges", "Challenges", Trophy],
+] as const;
+
 export function ClubScreen({ section }: { section: string }) {
   return (
     <>
-      <nav className="segment-control" aria-label="Club sections">
-        {sections.map(([id, label]) => (
+      <nav
+        className="segment-control club-navigation"
+        aria-label="Club sections"
+      >
+        {sections.map(([id, label, Icon]) => (
           <Link
             key={id}
             href={`/club/${id}`}
@@ -34,19 +45,26 @@ export function ClubScreen({ section }: { section: string }) {
                 : undefined
             }
           >
+            <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
             {label}
           </Link>
         ))}
       </nav>
       {(section === "discuss" || section === "insights") && (
-        <div className="pill-row mb-6">
-          <Link className="section-link" href="/club/discuss">
+        <nav className="discussion-views" aria-label="Discussion views">
+          <Link
+            href="/club/discuss"
+            aria-current={section === "discuss" ? "page" : undefined}
+          >
             Questions
           </Link>
-          <Link className="section-link" href="/club/insights">
+          <Link
+            href="/club/insights"
+            aria-current={section === "insights" ? "page" : undefined}
+          >
             Shared insights
           </Link>
-        </div>
+        </nav>
       )}
       {section === "vote" ? (
         <VotingPage />
@@ -64,30 +82,32 @@ export function ClubScreen({ section }: { section: string }) {
 }
 function MeContent() {
   const params = useSearchParams();
+  const section = params.get("section");
+  if (!section || !["notes", "reading", "accountability"].includes(section))
+    return <ProfileOverview />;
   return (
     <>
-      <nav className="segment-control" aria-label="Me sections">
-        <Link
-          href="/me"
-          aria-current={!params.get("section") ? "page" : undefined}
-        >
-          My reading
-        </Link>
-        <Link
-          href="/me?section=accountability"
-          aria-current={
-            params.get("section") === "accountability" ? "page" : undefined
-          }
-        >
-          Commitments & partner
-        </Link>
-        <Link href="/me/settings">Settings</Link>
-      </nav>
-      {params.get("section") === "accountability" ? (
+      <Link className="section-back" href="/me">
+        <ArrowLeft size={17} aria-hidden="true" />
+        My profile
+      </Link>
+      {section === "accountability" ? (
         <AccountabilityPage />
+      ) : section === "notes" ? (
+        <>
+          <PageHeading
+            eyebrow="ONLY YOU CAN SEE THESE"
+            title="Private notes"
+            description="The ideas you want to carry with you."
+          />
+          <PrivateNotes />
+        </>
       ) : (
         <>
-          <ProfilePage />
+          <PageHeading
+            title="Reading history"
+            description="Every little session adds to your story."
+          />
           <ReadingHistory />
         </>
       )}
@@ -106,12 +126,13 @@ function SettingsContent() {
   const params = useSearchParams();
   return (
     <>
-      <Link className="section-link" href="/me">
-        ← Me
+      <Link className="section-back" href="/me">
+        <ArrowLeft size={17} aria-hidden="true" />
+        My profile
       </Link>
       <PageHeading title="Settings" description="Make yourself at home." />
       <AppearanceSettings />
-      <ProfilePage settings />
+      <ProfileSettings />
       {membership.role !== "member" && (
         <section className="panel">
           <h2>Club management</h2>

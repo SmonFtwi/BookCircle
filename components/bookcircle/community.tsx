@@ -249,8 +249,8 @@ export function CommunityPage() {
         description="Ideas worth keeping. Reflections worth sharing."
         action={<ShareInsight />}
       />
-      <div className="grid-main">
-        <section className="panel">
+      <div className="discussion-feed">
+        <section className="stack">
           {feed.results.length ? (
             feed.results.map((item) => (
               <InsightCard key={item.post._id} item={item} />
@@ -271,15 +271,6 @@ export function CommunityPage() {
             </Button>
           )}
         </section>
-        <aside className="quote-panel">
-          <p className="eyebrow">A THOUGHT TO TAKE WITH YOU</p>
-          <blockquote>
-            Good ideas grow when we give them room in our lives.
-          </blockquote>
-          <p className="meta">
-            Read a little. Reflect honestly. Try one small change.
-          </p>
-        </aside>
       </div>
     </>
   );

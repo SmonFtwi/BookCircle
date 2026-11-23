@@ -42,6 +42,11 @@ test("four tabs, legacy redirects, and member management isolation", async ({
   await expect(
     page.getByRole("heading", { name: "Club management", exact: true }),
   ).toHaveCount(0);
+  await page.goto("/challenges");
+  await expect(page).toHaveURL(/\/club\/challenges$/);
+  await expect(
+    page.getByRole("heading", { name: "Less screen time", exact: true }),
+  ).toBeVisible();
 });
 test("quick-action reading uses current page and updates the screen behind it", async ({
   page,

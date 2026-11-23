@@ -5,7 +5,7 @@ import { useQuery, useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import type { Doc } from "@/lib/supabase/contracts";
 import { Button } from "@/components/ui/button";
-import { Plus, BookOpen } from "lucide-react";
+import { Plus, BookOpen, Search, Ellipsis, ArrowUpRight } from "lucide-react";
 import {
   ActionForm,
   Field,
@@ -310,14 +310,16 @@ export function ReadingPage() {
         title="Library"
         description="Find your next good read. Make it your own."
       />
-      <Field label="Search books">
+      <div className="library-search">
+        <Search size={20} aria-hidden="true" />
         <input
+          aria-label="Search books"
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Title or author"
+          placeholder="Find a title or author"
         />
-      </Field>
+      </div>
       <div
         className="segment-control mt-4"
         role="group"
@@ -329,6 +331,9 @@ export function ReadingPage() {
         ].map(([id, label]) => (
           <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>
             {label}
+            <span className="segment-count">
+              {id === "library" ? library.length : books.length}
+            </span>
           </button>
         ))}
       </div>
@@ -343,37 +348,73 @@ export function ReadingPage() {
           </select>
         </Field>
       )}
+      <p className="collection-caption">
+        {search.trim()
+          ? `Results for “${search.trim()}”`
+          : tab === "library"
+            ? "THE SHARED BOOKSHELF"
+            : "YOUR PERSONAL COLLECTION"}
+        <span>
+          {shown.length} {shown.length === 1 ? "book" : "books"}
+        </span>
+      </p>
       {feedback}
       {shown.length ? (
-        <div className="library-grid">
+        <div className="shelf-list">
           {shown.map(({ book, entry }) => (
-            <article className="panel library-card" key={book._id}>
-              <Cover
-                title={book.title}
-                author={book.author}
-                coverUrl={book.coverUrl}
-              />
-              <div>
-                <span className="tag">{book.category}</span>
-                <Link href={`/library/${book._id}`}>
-                  <h3 className="mt-2">{book.title} →</h3>
-                </Link>
-                <p>{book.author}</p>
-                <div className="progress-label">
-                  <span>
-                    {entry?.currentPage ?? 0} / {book.totalPages} pages
-                  </span>
-                  <span>
-                    {Math.round(
-                      ((entry?.currentPage ?? 0) / book.totalPages) * 100,
-                    )}
-                    %
-                  </span>
-                </div>
-                <Meter
-                  value={((entry?.currentPage ?? 0) / book.totalPages) * 100}
+            <article
+              className="shelf-book"
+              key={book._id}
+              aria-label={book.title}
+            >
+              <Link
+                className="shelf-cover-link"
+                href={`/library/${book._id}`}
+                aria-label={`View ${book.title}`}
+              >
+                <Cover
+                  title={book.title}
+                  author={book.author}
+                  coverUrl={book.coverUrl}
                 />
-                <Field label="Reading status">
+              </Link>
+              <div className="shelf-book-info">
+                <span className="book-category">{book.category}</span>
+                <Link className="shelf-title" href={`/library/${book._id}`}>
+                  <h2>{book.title}</h2>
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </Link>
+                <p className="shelf-author">{book.author}</p>
+                {entry ? (
+                  <div className="shelf-progress">
+                    <div className="progress-label">
+                      <span>
+                        Page {entry.currentPage} of {book.totalPages}
+                      </span>
+                      <strong>
+                        {Math.round(
+                          (entry.currentPage / book.totalPages) * 100,
+                        )}
+                        %
+                      </strong>
+                    </div>
+                    <Meter
+                      value={(entry.currentPage / book.totalPages) * 100}
+                      label={`Your progress in ${book.title}`}
+                    />
+                  </div>
+                ) : (
+                  <p className="shelf-length">
+                    {book.totalPages} pages · A new chapter awaits
+                  </p>
+                )}
+              </div>
+              <div className="shelf-book-footer">
+                <label className="shelf-status">
+                  <BookOpen size={16} aria-hidden="true" />
+                  <span className="sr-only">
+                    Reading status for {book.title}
+                  </span>
                   <select
                     disabled={busy}
                     value={entry?.status ?? ""}
@@ -391,25 +432,34 @@ export function ReadingPage() {
                     }
                   >
                     <option value="" disabled>
-                      Add to your list
+                      Add to shelf
                     </option>
                     <option value="want">Want to read</option>
-                    <option value="reading">Currently reading</option>
+                    <option value="reading">Reading</option>
                     <option value="paused">Paused</option>
                     <option value="completed">Completed</option>
                   </select>
-                </Field>
-                {entry && (
-                  <button
-                    className="text-button mt-2"
-                    disabled={busy}
-                    onClick={() => run(() => remove({ bookId: book._id }))}
-                  >
-                    Remove from my list
-                  </button>
-                )}
-                {membership.role !== "member" && tab === "library" && (
-                  <EditBook book={book} />
+                </label>
+                {(entry || membership.role !== "member") && (
+                  <details className="book-options">
+                    <summary aria-label={`Options for ${book.title}`}>
+                      <Ellipsis size={22} aria-hidden="true" />
+                    </summary>
+                    <div className="book-options-menu">
+                      {entry && (
+                        <button
+                          className="text-button"
+                          disabled={busy}
+                          onClick={() =>
+                            run(() => remove({ bookId: book._id }))
+                          }
+                        >
+                          Remove from my shelves
+                        </button>
+                      )}
+                      {membership.role !== "member" && <EditBook book={book} />}
+                    </div>
+                  </details>
                 )}
               </div>
             </article>
@@ -419,20 +469,27 @@ export function ReadingPage() {
         <div className="panel">
           <Empty
             title={
-              tab === "library"
-                ? "Your library starts here"
-                : "Your next chapter is waiting"
+              search.trim()
+                ? "No books found"
+                : tab === "library"
+                  ? "Your library starts here"
+                  : "A little space for your next read"
             }
             description={
-              tab === "library"
-                ? "Your administrator can add the first book to your shared library."
-                : "Explore the club library and choose a book to begin."
+              search.trim()
+                ? "Try another title or author."
+                : tab === "library"
+                  ? "A club manager can add the first book to your shared library."
+                  : "Choose a book from the club collection and make it yours."
             }
             action={
-              tab !== "library" ? (
+              search.trim() ? (
+                <Button variant="outline" onClick={() => setSearch("")}>
+                  Clear search
+                </Button>
+              ) : tab !== "library" ? (
                 <Button variant="outline" onClick={() => setTab("library")}>
-                  <BookOpen />
-                  Explore library
+                  Explore club books
                 </Button>
               ) : undefined
             }

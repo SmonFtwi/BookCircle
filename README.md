@@ -14,6 +14,8 @@ A warm reading room, with Home, Library, Club, and Me always within reach. The c
 
 [Quick-action sheet](docs/screenshots/quick-action-sheet.png) · [Reading form](docs/screenshots/reading-form.png) · [Dark mode](docs/screenshots/home-dark.png) · [Before the overhaul](docs/screenshots/before-home.png)
 
+[Library, Club and profile design refinement](docs/section-design-refinement.md): compact shelves on small screens, inline Club filters, and separate destinations for private notes, reading history, and commitments.
+
 Screenshots use mocked sample data. See [the UX review](docs/ux-review.md) for feature locations, validation, and implementation limits. Private notes currently require a reading session; the sheet explains this and asks for actual minutes. [Backend proposals](docs/proposed-migrations.md) are documentation only.
 
 ## What members can do

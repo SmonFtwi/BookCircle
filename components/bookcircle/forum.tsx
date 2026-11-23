@@ -8,12 +8,12 @@ import { useQuery, useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import type { Id } from "@/lib/supabase/contracts";
 import {
-  MessageCircle,
   ArrowUp,
   Plus,
   Pin,
   LockKeyhole,
   CheckCircle,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,27 +42,46 @@ export function AskQuestion({ trigger }: { trigger?: React.ReactNode }) {
 type Question = NonNullable<Awaited<ReturnType<typeof api.forum.detail>>>;
 function QuestionCard({ q }: { q: Question }) {
   return (
-    <article className="list-item">
-      <div className="row">
-        <span className="badge">{q.votes} ↑</span>
-        <div className="flex-1 min-w-0">
-          <div className="pill-row mb-2">
-            <span className="tag">{q.category}</span>
-            {q.pinned && (
-              <span className="badge">
-                <Pin size={11} className="inline" /> Pinned
-              </span>
-            )}
-            {q.locked && <LockKeyhole size={14} />}
-          </div>
-          <Link href={`/forum/${q.id}`}>
-            <h3>{q.title}</h3>
-          </Link>
-          <p className="meta mt-2">
-            {q.author.name} · {q.answerCount} answers ·{" "}
-            {new Date(q.createdAt).toLocaleDateString()}
-          </p>
+    <article className="discussion-card">
+      <div className="row between">
+        <span className="tag">{q.category}</span>
+        <div className="pill-row">
+          {q.pinned && (
+            <span className="meta">
+              <Pin size={14} aria-hidden="true" /> Pinned
+            </span>
+          )}
+          {q.locked && (
+            <span className="meta">
+              <LockKeyhole size={14} aria-hidden="true" /> Closed
+            </span>
+          )}
         </div>
+      </div>
+      <Link className="discussion-title" href={`/forum/${q.id}`}>
+        <h3>{q.title}</h3>
+      </Link>
+      <div className="discussion-card-footer">
+        <div className="discussion-author">
+          <span className="avatar" aria-hidden="true">
+            {q.author.name.slice(0, 1)}
+          </span>
+          <div>
+            <strong>{q.author.name}</strong>
+            <p>
+              {new Date(q.createdAt).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })}
+            </p>
+          </div>
+        </div>
+        <span className="discussion-counts">
+          <span>
+            {q.answerCount} {q.answerCount === 1 ? "reply" : "replies"}
+          </span>
+          <span>{q.votes} ↑</span>
+        </span>
       </div>
     </article>
   );
@@ -89,97 +108,94 @@ export function ForumPage() {
   return (
     <>
       <PageHeading
-        eyebrow="LET’S TALK ABOUT IT"
-        title="Conversations that matter"
-        description="Ask freely. Listen closely. Grow together."
+        eyebrow="GOOD CONVERSATIONS START HERE"
+        title="Conversations"
+        description="A question, a new perspective, a little connection."
         action={<AskQuestion />}
       />
-      <div className="grid-main">
-        <section className="panel">
+      <section className="discussion-toolbar" aria-label="Conversation filters">
+        <div className="library-search">
+          <Search size={20} aria-hidden="true" />
           <input
+            type="search"
             aria-label="Search questions"
-            placeholder="Search the conversations…"
-            className="search-input mb-5"
+            placeholder="Find a conversation"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <div className="tabs-row">
-            {(
-              [
-                ["recent", "Recent"],
-                ["trending", "Trending"],
-                ["unanswered", "Unanswered"],
-                ["mine", "My questions"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                onClick={() => {
-                  setMode(id);
-                  setCategory(undefined);
-                }}
-                className={mode === id ? "active" : ""}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {questions === undefined ? (
-            <Loading />
-          ) : questions.length ? (
-            questions.map((q) => <QuestionCard key={q.id} q={q} />)
-          ) : (
-            <Empty
-              title="Start a meaningful conversation"
-              description="Questions open doors. Share one that has been on your mind."
-            />
-          )}
-          {!search && list.status === "CanLoadMore" && (
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => list.loadMore(15)}
+        </div>
+        <div className="discussion-filters">
+          <Field label="Topic">
+            <select
+              disabled={!!search.trim()}
+              value={categoryId ?? ""}
+              onChange={(e) =>
+                setCategory(
+                  e.target.value
+                    ? (e.target.value as Id<"forumCategories">)
+                    : undefined,
+                )
+              }
             >
-              Load more questions
-            </Button>
-          )}
-        </section>
-        <aside className="stack">
-          <section className="panel">
-            <h2 className="mb-4">Explore topics</h2>
-            <div className="side-nav">
-              <button
-                className={`nav-item ${!categoryId ? "active" : ""}`}
-                onClick={() => setCategory(undefined)}
-              >
-                All conversations
-              </button>
+              <option value="">All topics</option>
               {categories
                 ?.filter((c) => c.active)
                 .map((c) => (
-                  <button
-                    key={c._id}
-                    className={`nav-item ${categoryId === c._id ? "active" : ""}`}
-                    onClick={() => {
-                      setCategory(c._id);
-                      setMode("recent");
-                    }}
-                  >
+                  <option value={c._id} key={c._id}>
                     {c.name}
-                  </button>
+                  </option>
                 ))}
-            </div>
-          </section>
-          <section className="quote-panel">
-            <MessageCircle size={25} />
-            <h3 className="mt-3">A thoughtful space</h3>
-            <p className="meta mt-2">
-              Be curious, be kind, and leave room for a different point of view.
-              Anonymous participation is always welcome.
-            </p>
-          </section>
-        </aside>
-      </div>
+            </select>
+          </Field>
+          <Field label="Show">
+            <select
+              disabled={!!search.trim()}
+              value={mode}
+              onChange={(e) => setMode(e.target.value as typeof mode)}
+            >
+              <option value="recent">Recent</option>
+              <option value="trending">Trending</option>
+              <option value="unanswered">Unanswered</option>
+              <option value="mine">My questions</option>
+            </select>
+          </Field>
+        </div>
+        {search.trim() && <p className="meta">Searching across all topics.</p>}
+      </section>
+      <section className="discussion-feed" aria-label="Conversations">
+        {questions === undefined || (!search.trim() && list.isLoading) ? (
+          <Loading />
+        ) : questions.length ? (
+          questions.map((q) => <QuestionCard key={q.id} q={q} />)
+        ) : (
+          <div className="panel">
+            <Empty
+              title="No conversations here yet"
+              description="Try another filter, or start a conversation of your own."
+              action={
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearch("");
+                    setCategory(undefined);
+                    setMode("recent");
+                  }}
+                >
+                  Reset filters
+                </Button>
+              }
+            />
+          </div>
+        )}
+        {!search && list.status === "CanLoadMore" && (
+          <Button variant="outline" onClick={() => list.loadMore(15)}>
+            Load more conversations
+          </Button>
+        )}
+      </section>
+      <p className="discussion-guidance">
+        Be curious. Be kind. Every perspective has a place here.
+      </p>
     </>
   );
 }
