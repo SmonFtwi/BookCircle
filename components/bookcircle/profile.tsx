@@ -1,4 +1,5 @@
 "use client";
+import { launchQuickAction } from "./quick-actions";
 import { InstallGuideButton } from "./install-guide";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@/lib/supabase/hooks";
@@ -158,9 +159,16 @@ export function ProfilePage({ settings = false }: { settings?: boolean } = {}) {
                   </div>
                 ))
               ) : (
-                <p className="muted text-sm">
-                  Your reflections from Read → Reflect → Apply will appear here.
-                </p>
+                <div>
+                  <p className="muted">No notes yet. Keep an idea close.</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => launchQuickAction({ action: "note" })}
+                  >
+                    Add your first note
+                  </Button>
+                </div>
               )}
             </section>
           )}

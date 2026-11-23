@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
+import { OfflineNotice } from "./offline-notice";
 import { QuickActions, launchQuickAction } from "./quick-actions";
 import { Notifications } from "./notifications";
 import { Logo, Loading } from "./primitives";
@@ -114,7 +115,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Link>
           <Notifications />
         </header>
-        <main className="content">{children}</main>
+        <main className="content">
+          <OfflineNotice />
+          {children}
+        </main>
       </div>
       <nav className="circle-tabs" aria-label="Main navigation">
         {nav.map((n, index) => (

@@ -4,15 +4,17 @@ BookCircle is an invitation-only book club app. Members track what they read, re
 
 ## See it in action
 
-**Sign in.** Existing members sign in here; new members register with a club invitation.
+A warm reading room, with Home, Library, Club, and Me always within reach. The center button opens reading, notes, questions, and challenge check-ins without leaving the screen.
 
-![BookCircle sign-in screen with email and password fields](docs/screenshots/sign-in.png)
+| Home | Library |
+| --- | --- |
+| ![Home feed at 390px](docs/screenshots/home.png) | ![Library at 390px](docs/screenshots/library.png) |
+| Club | Me |
+| ![Club discussions at 390px](docs/screenshots/club.png) | ![Personal reading at 390px](docs/screenshots/me.png) |
 
-**Track a challenge.** This example shows a member logging a day below their screen-time limit. The leaderboard shows aggregate progress; individual daily entries stay private.
+[Quick-action sheet](docs/screenshots/quick-action-sheet.png) · [Reading form](docs/screenshots/reading-form.png) · [Dark mode](docs/screenshots/home-dark.png) · [Before the overhaul](docs/screenshots/before-home.png)
 
-![BookCircle Challenges screen showing progress and a leaderboard for a screen-time goal](docs/screenshots/challenges.png)
-
-Screenshots use sample data.
+Screenshots use mocked sample data. See [the UX review](docs/ux-review.md) for feature locations, validation, and implementation limits. Private notes currently require a reading session; the sheet explains this and asks for actual minutes. [Backend proposals](docs/proposed-migrations.md) are documentation only.
 
 ## What members can do
 
@@ -54,7 +56,7 @@ Start the app with `npm run dev` and open [http://localhost:3000](http://localho
 | Moderator | Shared content tools, library, forum moderation, insights, challenges, voting, meetings, prompts, categories, and partner pairing |
 | Admin     | All moderator tools plus invitations, member activation, and role assignment                                                      |
 
-Admins assign roles in **Admin tools → Members → Role**. A user cannot change their own role from this screen, and the database prevents demoting the last active administrator. Moderators cannot invite new users to the club, change account access, or assign roles; they can invite existing members to challenges. Private reading records and reflections remain personal. Administrators and moderators can identify anonymous forum authors for moderation.
+Admins assign roles in **Me → Settings → Club management → Members → Role**. A user cannot change their own role from this screen, and the database prevents demoting the last active administrator. Moderators cannot invite new users to the club, change account access, or assign roles; they can invite existing members to challenges. Private reading records and reflections remain personal. Administrators and moderators can identify anonymous forum authors for moderation.
 
 ## Database and security
 
@@ -79,11 +81,13 @@ Deploy this Next.js app to Vercel with the three variables above. `vercel.json` 
 ```sh
 npm run check        # TypeScript, ESLint, unit tests, production build
 npm run test:db      # requires psql and DATABASE_URL; fixtures roll back
-npm run test:ui      # with npm run dev running; install Chromium via npx playwright install chromium
+npm run test:ui      # after check/build; starts the production app on port 3100
 ```
 
 Alternatively run all three files in `supabase/tests/` in the Supabase SQL editor. The leaderboard suite checks all four metrics, ties, date boundaries, zero activity, small leaderboards, and membership isolation. The application suite exercises real RPCs under the authenticated role, signup/invitation consumption, reading, insights, anonymous discussions, partner privacy, challenges, voting, meetings, and cross-club/inactive-member rejection. The general challenge suite additionally tests invitation states, private visibility, decimal totals, daily maximum/minimum boundaries, check-ins, editing/deletion, accepted-date restrictions, and manager permissions. All fixtures roll back.
 
 The checked-in migrations and code contain no private access credentials. Keep `.env*`, local setup files, and database connection passwords out of Git.
+
+Install a browser with `npx playwright install chromium`, or set `PLAYWRIGHT_EXECUTABLE_PATH` to an installed Chromium binary. Set `UPDATE_SCREENSHOTS=1` when running UI tests to refresh the 390px review images. `BEFORE_URL` optionally captures a separately running original app.
 
 Browser tests use mocked Supabase responses and never create real accounts or challenge entries. Set `PLAYWRIGHT_BASE_URL` for a different local port or `PLAYWRIGHT_EXECUTABLE_PATH` to use an installed Chromium binary.

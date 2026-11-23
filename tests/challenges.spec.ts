@@ -57,7 +57,7 @@ test("member accepts, records zero, edits and deletes a private daily entry", as
     page.getByRole("button", { name: "Create challenge" }),
   ).toHaveCount(0);
   await page.getByRole("button", { name: "Accept invitation" }).click();
-  await page.getByRole("button", { name: "Record progress" }).click();
+  await page.getByRole("button", { name: "Check in today" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Daily amount (minutes)").fill("0");
   await dialog.getByRole("button", { name: "Save entry" }).click();

@@ -26,7 +26,12 @@ import { EntryEditor } from "./challenge-forms";
 import { challengePhase, isManualChallenge } from "@/lib/challenges";
 import Link from "next/link";
 export type QuickAction = "reading" | "note" | "question" | "checkin";
-type Launch = { action?: QuickAction; bookId?: Id<"books">; share?: boolean };
+type Launch = {
+  action?: QuickAction;
+  bookId?: Id<"books">;
+  challengeId?: string;
+  share?: boolean;
+};
 const EVENT = "bookcircle:quick-action";
 export function launchQuickAction(detail: Launch = {}) {
   window.dispatchEvent(new CustomEvent(EVENT, { detail }));
@@ -101,6 +106,7 @@ export function QuickActions() {
           <Drawer.Overlay className="dialog-overlay" />
           <Drawer.Content
             className="quick-sheet"
+            data-flow={!!launch.action}
             aria-describedby="quick-description"
           >
             <div className="sheet-handle" aria-hidden="true" />
@@ -156,6 +162,7 @@ export function QuickActions() {
               <QuestionForm onSuccess={saved} />
             ) : (
               <CheckinForm
+                initialId={launch.challengeId}
                 onSuccess={saved}
                 onReading={() => setLaunch({ action: "reading" })}
                 onNote={() => setLaunch({ action: "note", share: true })}
@@ -302,7 +309,7 @@ function SessionForm({
         <input
           type="number"
           inputMode="numeric"
-          min={start}
+          min={0}
           max={length}
           value={page}
           onChange={(e) => setPage(Number(e.target.value))}
@@ -543,17 +550,19 @@ function QuestionForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 function CheckinForm({
+  initialId,
   onSuccess,
   onReading,
   onNote,
 }: {
+  initialId?: string;
   onSuccess: () => void;
   onReading: () => void;
   onNote: () => void;
 }) {
   const { profile } = useMember();
   const rows = useQuery(api.club.challenges);
-  const [id, setId] = useState("");
+  const [id, setId] = useState(initialId ?? "");
   if (!rows) return <Loading />;
   const active = rows.filter(
     (r) =>

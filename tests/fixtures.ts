@@ -202,8 +202,49 @@ export async function mockCircle(
       else if (operation === "reading.logs")
         result = { page: logs, isDone: true, continueCursor: "" };
       else if (operation === "reading.reflections") result = [];
-      else if (operation === "community.feed" || operation === "forum.list")
-        result = { page: [], isDone: true, continueCursor: "" };
+      else if (operation === "community.feed")
+        result = {
+          page: [
+            {
+              post: {
+                _id: "insight-1",
+                _creationTime: Date.now() - 3600000,
+                title: "Look at the familiar, again",
+                content:
+                  "Today I took the long way home. The same street felt like a new chapter when I slowed down enough to notice.",
+                chapter: "",
+                commentCount: 0,
+                helpful: 3,
+                interesting: 2,
+                applied: 1,
+                authorId: inviteeId,
+              },
+              author: { name: "Sam Reader", avatarUrl: null },
+              bookTitle: book.title,
+              myReactions: [],
+            },
+          ],
+          isDone: true,
+          continueCursor: "",
+        };
+      else if (operation === "forum.list")
+        result = {
+          page: [
+            {
+              id: "question-1",
+              title: "What helped you make reading a daily habit?",
+              category: "Book talk",
+              createdAt: Date.now() - 7200000,
+              author: { name: "Anonymous Member", avatarUrl: null },
+              answerCount: 2,
+              votes: 4,
+              pinned: false,
+              locked: false,
+            },
+          ],
+          isDone: true,
+          continueCursor: "",
+        };
       else if (operation === "club.meetings") result = [meeting];
       else if (operation === "club.votingRounds") result = [voting];
       else if (operation === "club.commitments") result = [];
@@ -216,7 +257,10 @@ export async function mockCircle(
           },
         ];
       else if (operation === "admin.overview")
-        result = { counts: { members: 8 } };
+        result = {
+          counts: { members: 8 },
+          club: { weeklyPrompt: "What stayed with you?" },
+        };
       else if (
         [
           "profiles.directory",

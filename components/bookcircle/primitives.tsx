@@ -1,5 +1,11 @@
 "use client";
-import { useState, type ReactNode, type FormEvent } from "react";
+import {
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+  type FormEvent,
+} from "react";
+import { Drawer } from "vaul";
 import Image from "next/image";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, BookOpen, Loader2, ArrowRight } from "lucide-react";
@@ -8,7 +14,17 @@ export function Logo() {
   return (
     <span className="logo">
       <span className="logo-mark">
-        <BookOpen size={23} />
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+          />
+          <path d="M9 3.5h6v10l-3-2-3 2z" fill="currentColor" />
+        </svg>
       </span>
       BookCircle<span className="logo-dot">.</span>
     </span>
@@ -148,6 +164,31 @@ export function Modal({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const mobile = useSyncExternalStore(
+    subscribeMobile,
+    () => window.matchMedia("(max-width: 600px)").matches,
+    () => false,
+  );
+  if (mobile)
+    return (
+      <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs>
+        {trigger && <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>}
+        <Drawer.Portal>
+          <Drawer.Overlay className="dialog-overlay" />
+          <Drawer.Content className="dialog-content">
+            <div className="sheet-handle" aria-hidden="true" />
+            <Drawer.Title className="dialog-title">{title}</Drawer.Title>
+            <Drawer.Description className={description ? "muted" : "sr-only"}>
+              {description || title}
+            </Drawer.Description>
+            <Drawer.Close className="dialog-close" aria-label="Close">
+              <X size={20} />
+            </Drawer.Close>
+            {children}
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+    );
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
@@ -206,6 +247,7 @@ export function ActionForm({
     setDone(false);
     try {
       await onSubmit(new FormData(form));
+      window.dispatchEvent(new Event("bookcircle:own-activity"));
       setDone(true);
       onSuccess?.();
     } catch (e) {
@@ -246,6 +288,7 @@ export function useFeedback() {
     setBusy(true);
     try {
       await work();
+      window.dispatchEvent(new Event("bookcircle:own-activity"));
       setMessage(successMessage);
     } catch (e) {
       setMessage(errorText(e));
@@ -272,4 +315,10 @@ export function dayInZone(timezone: string) {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+}
+
+function subscribeMobile(callback: () => void) {
+  const media = window.matchMedia("(max-width: 600px)");
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
 }

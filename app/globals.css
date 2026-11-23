@@ -118,12 +118,12 @@ h1 {
   font-weight: 600;
 }
 h2 {
-  font-size: 21px;
+  font-size: 24px;
   letter-spacing: -0.5px;
   font-weight: 600;
 }
 h3 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
 }
 p {
@@ -136,7 +136,7 @@ svg {
   color: hsl(var(--muted-foreground));
 }
 .eyebrow {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -147,7 +147,7 @@ svg {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 23px;
+  font-size: 24px;
   letter-spacing: -1px;
   font-weight: 600;
 }
@@ -262,57 +262,6 @@ svg {
   gap: 5px;
   font-weight: bold;
 }
-.hero-card {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--border)) 0%,
-    hsl(var(--border)) 55%,
-    hsl(var(--muted)) 100%
-  );
-  border: 1px solid hsl(var(--border));
-  border-radius: 16px;
-  padding: 27px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 14px 40px hsl(var(--foreground) / 0.071);
-}
-.hero-card::after {
-  content: "";
-  position: absolute;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    hsl(var(--foreground) / 0.333) 0%,
-    transparent 70%
-  );
-  right: -60px;
-  top: -80px;
-  pointer-events: none;
-}
-.hero-card .eyebrow {
-  font-size: 10px;
-}
-.hero-book {
-  display: flex;
-  gap: 26px;
-  align-items: center;
-}
-.hero-info {
-  flex: 1;
-  min-width: 0;
-}
-.hero-info h2 {
-  font-size: 26px;
-  line-height: 1.3;
-  margin-bottom: 6px;
-}
-.hero-info > p {
-  font-size: 13px;
-  color: hsl(var(--muted-foreground));
-  margin-bottom: 20px;
-}
 .book-cover {
   width: 118px;
   aspect-ratio: 2/3;
@@ -336,7 +285,7 @@ svg {
   overflow-wrap: anywhere;
   max-width: 100%;
   font-family: Georgia, serif;
-  font-size: 19px;
+  font-size: 20px;
   line-height: 1.2;
 }
 .book-cover span {
@@ -374,9 +323,6 @@ svg {
   border-radius: 6px;
   transition: width 0.3s;
 }
-.hero-info button {
-  margin-top: 20px;
-}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -400,7 +346,7 @@ svg {
   display: flex;
   justify-content: space-between;
   color: hsl(var(--muted-foreground));
-  font-size: 11px;
+  font-size: 12px;
 }
 .stat-number {
   font-size: 29px;
@@ -418,30 +364,6 @@ svg {
   font-size: 12px;
   color: hsl(var(--muted-foreground));
 }
-.quick-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-.quick-button {
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 12px;
-  padding: 18px 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  align-items: center;
-  font-size: 12px;
-  color: hsl(var(--muted-foreground));
-}
-.quick-button svg {
-  color: hsl(var(--primary));
-}
-.quick-button:hover {
-  border-color: hsl(var(--primary));
-  background: hsl(var(--border));
-}
 .feed-card {
   padding: 21px 0;
   border-bottom: 1px solid hsl(var(--border));
@@ -457,7 +379,7 @@ svg {
   margin-bottom: 14px;
 }
 .author-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: bold;
 }
 .meta {
@@ -469,14 +391,14 @@ svg {
   margin-bottom: 8px;
 }
 .feed-card p {
-  font-size: 13px;
+  font-size: 14px;
   color: hsl(var(--muted-foreground));
 }
 .tag {
   display: inline-flex;
   padding: 4px 9px;
   border-radius: 5px;
-  font-size: 10px;
+  font-size: 12px;
   background: hsl(var(--border));
   color: hsl(var(--muted-foreground));
   font-weight: 600;
@@ -548,10 +470,10 @@ svg {
 }
 .date-block strong {
   display: block;
-  font-size: 23px;
+  font-size: 24px;
 }
 .date-block span {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 1px;
 }
 .row {
@@ -574,7 +496,7 @@ svg {
   font-size: 16px;
 }
 .empty-state p {
-  font-size: 13px;
+  font-size: 14px;
   color: hsl(var(--muted-foreground));
   max-width: 350px;
 }
@@ -631,7 +553,7 @@ svg {
   box-shadow: 0 25px 90px hsl(var(--foreground) / 0.188);
 }
 .dialog-title {
-  font-size: 23px;
+  font-size: 24px;
   font-weight: 600;
   padding-right: 32px;
   margin-bottom: 5px;
@@ -648,7 +570,7 @@ svg {
   place-items: center;
 }
 .dialog-content > .muted {
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 20px;
 }
 .form-stack {
@@ -658,7 +580,7 @@ svg {
 .field {
   display: grid;
   gap: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 .field small {
@@ -699,7 +621,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .check-field input {
   width: 17px;
@@ -711,7 +633,7 @@ svg {
   background: hsl(var(--card));
   color: hsl(var(--destructive));
   border-radius: 7px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .success-message,
 .feedback {
@@ -719,7 +641,7 @@ svg {
   background: hsl(var(--muted));
   color: hsl(var(--primary));
   border-radius: 7px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .feedback {
   margin: 12px 0;
@@ -777,7 +699,7 @@ svg {
   font-size: 16px;
 }
 .list-item p {
-  font-size: 13px;
+  font-size: 14px;
 }
 .list-item .row {
   align-items: flex-start;
@@ -884,7 +806,7 @@ th {
   margin-bottom: 8px;
 }
 .auth-card > p {
-  font-size: 13px;
+  font-size: 14px;
   color: hsl(var(--muted-foreground));
   margin-bottom: 26px;
 }
@@ -962,7 +884,7 @@ th {
   border-radius: 30px;
   background: hsl(var(--muted));
   padding: 4px 10px;
-  font-size: 10px;
+  font-size: 12px;
   color: hsl(var(--muted-foreground));
 }
 .spaced {
@@ -997,15 +919,6 @@ th {
   .grid-main {
     grid-template-columns: minmax(0, 1.5fr) minmax(240px, 1fr);
     gap: 18px;
-  }
-  .hero-book {
-    gap: 18px;
-  }
-  .hero-card {
-    padding: 22px;
-  }
-  .hero-info h2 {
-    font-size: 23px;
   }
   .book-cover {
     width: 95px;
@@ -1062,26 +975,17 @@ th {
     margin-bottom: 8px;
   }
   .page-heading h1 {
-    font-size: 28px;
+    font-size: 32px;
   }
   .page-heading .muted {
     font-size: 12px;
   }
   .page-heading > button {
     padding: 8px 11px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .grid-main > .stack:last-child {
     grid-template-columns: 1fr 1fr;
-  }
-  .hero-card {
-    padding: 23px;
-  }
-  .hero-book {
-    gap: 20px;
-  }
-  .hero-info h2 {
-    font-size: 24px;
   }
   .book-cover {
     width: 105px;
@@ -1110,19 +1014,19 @@ th {
     gap: 20px;
   }
   .welcome-story h1 {
-    font-size: 40px;
+    font-size: 32px;
     max-width: 420px;
   }
   .welcome-story p {
     max-width: 400px;
-    font-size: 13px;
+    font-size: 14px;
     margin-top: 12px;
   }
   .welcome-art {
     display: none;
   }
   .welcome-story .logo {
-    font-size: 21px;
+    font-size: 24px;
     margin-bottom: 10px;
   }
   .welcome-footer {
@@ -1147,9 +1051,6 @@ th {
   .library-card {
     padding: 17px;
   }
-  .quick-button {
-    padding: 15px 5px;
-  }
 }
 @media (max-width: 430px) {
   .content {
@@ -1159,25 +1060,8 @@ th {
   .grid-main > .stack:last-child {
     grid-template-columns: 1fr;
   }
-  .hero-card {
-    padding: 19px;
-  }
-  .hero-book {
-    gap: 17px;
-  }
   .book-cover {
     width: 85px;
-  }
-  .hero-info h2 {
-    font-size: 22px;
-  }
-  .hero-info > p {
-    font-size: 11px;
-    margin-bottom: 12px;
-  }
-  .hero-info button {
-    font-size: 11px;
-    margin-top: 14px;
   }
   .stat-grid {
     gap: 9px;
@@ -1186,7 +1070,7 @@ th {
     padding: 12px;
   }
   .stat-top {
-    font-size: 10px !important;
+    font-size: 12px !important;
   }
   .stat-top svg {
     width: 14px;
@@ -1196,12 +1080,6 @@ th {
   }
   .stat-caption {
     font-size: 9px;
-  }
-  .quick-grid {
-    gap: 7px;
-  }
-  .quick-button {
-    font-size: 10px;
   }
   .page-heading {
     flex-wrap: wrap;
@@ -1222,11 +1100,8 @@ th {
   .field-row {
     gap: 10px;
   }
-  .hero-info .progress-label {
-    font-size: 9px;
-  }
   .logo {
-    font-size: 21px;
+    font-size: 24px;
   }
 }
 
@@ -1260,13 +1135,6 @@ th {
 .install-steps li::marker {
   color: hsl(var(--primary));
   font-weight: 700;
-}
-
-/* Shared reading and challenge surfaces. */
-.panel,
-.hero-card,
-.stat-card {
-  min-width: 0;
 }
 .page-heading > div {
   min-width: 0;
@@ -1379,7 +1247,7 @@ summary:focus-visible {
   color: hsl(var(--primary));
   border-radius: 50%;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
 }
 .leaderboard-list li:first-child .leaderboard-rank {
   background: hsl(var(--muted));
@@ -1404,7 +1272,7 @@ summary:focus-visible {
   display: block;
   max-width: 110px;
   color: hsl(var(--muted-foreground));
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 .challenge-footer {
@@ -1913,4 +1781,94 @@ textarea {
   color: hsl(var(--primary));
   font-weight: 600;
   box-shadow: 0 1px 4px hsl(var(--foreground) / 0.06);
+}
+
+.logo-mark {
+  border-radius: 50%;
+  color: hsl(var(--primary-foreground));
+}
+.quick-sheet {
+  z-index: 61;
+}
+body:has(.quick-sheet[data-flow="true"]) .circle-tabs {
+  visibility: hidden;
+}
+.streak-ribbon {
+  background: hsl(var(--accent) / 0.12);
+  color: hsl(var(--foreground));
+  border-top: 4px solid hsl(var(--accent));
+}
+.offline-notice {
+  border-radius: 16px;
+  background: hsl(var(--muted));
+  padding: 16px;
+  margin-bottom: 24px;
+}
+@keyframes goal-pulse {
+  50% {
+    transform: scale(1.04);
+  }
+}
+.goal-complete {
+  animation: goal-pulse 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.avatar,
+.date-block {
+  color: hsl(var(--primary));
+}
+.notification-count {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  min-width: 20px;
+  height: 20px;
+  font-size: 12px;
+}
+.book-cover {
+  padding: 12px 8px;
+  gap: 8px;
+}
+.book-cover strong {
+  font-size: 16px;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.book-cover.small strong {
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.list-item:not(.row) {
+  display: block;
+}
+input:not([type="checkbox"]),
+select,
+textarea {
+  border-color: hsl(var(--input));
+}
+.library-card a:has(h3),
+.feed-card a:has(h3),
+.list-item a:has(h3) {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+summary {
+  min-height: 44px;
+  cursor: pointer;
+}
+.book-cover span {
+  font-size: 12px;
 }

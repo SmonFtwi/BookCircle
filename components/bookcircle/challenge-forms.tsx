@@ -398,7 +398,7 @@ export function ChallengeEntries({ row }: { row: ChallengeRow }) {
         <Button className="mt-4 w-full">
           {challengePhase(row.challenge, dayInZone(profile.timezone)) === "Past"
             ? "View your entries"
-            : "Record progress"}
+            : "Check in today"}
         </Button>
       }
     >

@@ -1,10 +1,9 @@
 "use client";
 import Link from "next/link";
-import { launchQuickAction } from "./quick-actions";
 import { useState } from "react";
 import { useQuery, useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
-import type { Id, Doc } from "@/lib/supabase/contracts";
+import type { Doc } from "@/lib/supabase/contracts";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen } from "lucide-react";
 import {
@@ -49,24 +48,6 @@ export function BookSelect({
         </option>
       ))}
     </select>
-  );
-}
-export function LogReading({
-  trigger,
-  bookId,
-}: {
-  trigger?: React.ReactNode;
-  bookId?: Id<"books">;
-}) {
-  return trigger ? (
-    <span onClick={() => launchQuickAction({ action: "reading", bookId })}>
-      {trigger}
-    </span>
-  ) : (
-    <Button onClick={() => launchQuickAction({ action: "reading", bookId })}>
-      <Plus />
-      Log reading
-    </Button>
   );
 }
 export function AddBook() {

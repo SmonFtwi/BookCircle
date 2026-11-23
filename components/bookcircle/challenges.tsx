@@ -1,4 +1,5 @@
 "use client";
+import { launchQuickAction } from "./quick-actions";
 import { ProgressRing, AvatarStack } from "./signature";
 import { useState } from "react";
 import Link from "next/link";
@@ -322,11 +323,27 @@ export function ChallengeCard({ row }: { row: ChallengeRow }) {
         {joined && isManualChallenge(c) && phase !== "Upcoming" && (
           <ChallengeEntries row={row} />
         )}
-        {joined && !isManualChallenge(c) && phase === "Active" && (
-          <Button asChild className="mt-4 w-full">
-            <Link href={action.href}>{action.label}</Link>
-          </Button>
-        )}
+        {joined &&
+          !isManualChallenge(c) &&
+          phase === "Active" &&
+          (c.goalType === "commitments" ? (
+            <Button asChild className="mt-4 w-full">
+              <Link href={action.href}>Check in today</Link>
+            </Button>
+          ) : (
+            <Button
+              className="mt-4 w-full"
+              onClick={() =>
+                launchQuickAction(
+                  c.goalType === "insights"
+                    ? { action: "note", share: true }
+                    : { action: "reading" },
+                )
+              }
+            >
+              Check in today
+            </Button>
+          ))}
         {joined && phase === "Upcoming" && (
           <p className="muted text-sm mt-3">
             You’re in. Activity from {challengeDate(c.startDate)} counts toward

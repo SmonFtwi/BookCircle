@@ -15,7 +15,7 @@ export function ProgressRing({
   const circumference = 2 * Math.PI * 29;
   return (
     <span
-      className="progress-ring"
+      className={`progress-ring ${progress >= 100 ? "goal-complete" : ""}`}
       style={{ width: size, height: size }}
       role="progressbar"
       aria-label={label}

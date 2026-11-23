@@ -39,8 +39,13 @@ function ActivityFeed() {
   const [error, setError] = useState("");
   useEffect(() => {
     const notify = () => setFresh(true);
+    const own = () => setRevision((r) => r + 1);
+    window.addEventListener("bookcircle:own-activity", own);
     window.addEventListener("bookcircle:new-activity", notify);
-    return () => window.removeEventListener("bookcircle:new-activity", notify);
+    return () => {
+      window.removeEventListener("bookcircle:new-activity", notify);
+      window.removeEventListener("bookcircle:own-activity", own);
+    };
   }, []);
   useEffect(() => {
     let live = true;
@@ -292,7 +297,12 @@ export function HomePage() {
             </div>
             <button
               className="section-link mt-4"
-              onClick={() => launchQuickAction({ action: "checkin" })}
+              onClick={() =>
+                launchQuickAction({
+                  action: "checkin",
+                  challengeId: row.challenge._id,
+                })
+              }
             >
               Check in today <ArrowRight size={16} />
             </button>
