@@ -25,16 +25,10 @@ for (const width of [320, 390, 768, 1280]) {
     ).toBe(true);
     await page.goto("/club/discuss");
     await expect(
-      page.getByRole("heading", { name: "Conversations", exact: true }),
+      page.getByRole("heading", { name: "Discussions", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("combobox", { name: "Topic", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("combobox", { name: "Show", exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Explore topics" }),
+      page.getByRole("navigation", { name: "Discussion views" }),
     ).toHaveCount(0);
     const feed = await page
       .getByRole("region", { name: "Conversations", exact: true })
@@ -100,11 +94,7 @@ test("Me provides clear separate destinations and an obvious way back", async ({
     page.getByRole("heading", { name: "Recent sessions", exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "My profile", exact: true }).click();
-  await page.getByRole("link", { name: /Commitments & partner Put/ }).click();
-  await expect(
-    page.getByRole("heading", { name: "My commitments", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: "My profile", exact: true }).click();
+  await expect(page.getByRole("link", { name: /Commitments/ })).toHaveCount(0);
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page.getByLabel("Full name", { exact: true })).toHaveValue(
     "Alex",
@@ -113,34 +103,24 @@ test("Me provides clear separate destinations and an obvious way back", async ({
     page.getByRole("heading", { name: "Club management" }),
   ).toHaveCount(0);
 });
-test("Club topics and sorting use the existing query arguments", async ({
+test("questions and thoughts appear together without nested navigation", async ({
   page,
 }) => {
   await mockCircle(page, "member");
   await page.goto("/club/discuss");
-  const requestPromise = page.waitForRequest((request) => {
-    if (!request.url().includes("bookcircle_query")) return false;
-    const body = request.postDataJSON();
-    return (
-      body.operation === "forum.list" &&
-      body.args.categoryId === "70000000-0000-0000-0000-000000000002" &&
-      body.args.mode === "trending"
-    );
-  });
-  await page
-    .getByRole("combobox", { name: "Topic", exact: true })
-    .selectOption("70000000-0000-0000-0000-000000000002");
-  await page
-    .getByRole("combobox", { name: "Show", exact: true })
-    .selectOption("trending");
-  await requestPromise;
-  await page
-    .getByRole("navigation", { name: "Discussion views" })
-    .getByRole("link", { name: "Shared insights", exact: true })
-    .click();
   await expect(
-    page.getByRole("heading", { name: "From the circle", exact: true }),
+    page.getByRole("heading", { name: "Look at the familiar, again" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "What helped you make reading a daily habit?",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Discussion views" }),
+  ).toHaveCount(0);
+  await page.goto("/club/insights");
+  await expect(page).toHaveURL(/\/club\/discuss$/);
 });
 test("review captures for narrow and dark section layouts", async ({
   page,
@@ -154,7 +134,7 @@ test("review captures for narrow and dark section layouts", async ({
   await mockCircle(page, "member");
   for (const [name, path, title] of [
     ["library", "/library", "Library"],
-    ["club", "/club/discuss", "Conversations"],
+    ["club", "/club/discuss", "Discussions"],
     ["me", "/me", "Me"],
   ]) {
     await page.goto(path);
@@ -179,7 +159,7 @@ test("review captures for narrow and dark section layouts", async ({
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/club/discuss");
   await expect(
-    page.getByRole("heading", { name: "Conversations", exact: true }),
+    page.getByRole("heading", { name: "Discussions", exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: "docs/screenshots/club-desktop.png",

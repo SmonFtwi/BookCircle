@@ -25,78 +25,16 @@ export function InstallGuide() {
   const [platform, setPlatform] = useState<Platform>("ios");
 
   useEffect(() => {
-    const smallScreen = window.matchMedia("(max-width: 767px)");
-    const standalone = window.matchMedia("(display-mode: standalone)");
-    const iosNavigator = navigator as Navigator & { standalone?: boolean };
-    const ios =
-      /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const mobile = ios || /Android/i.test(navigator.userAgent);
-    let dismissed = false;
-    try {
-      dismissed = localStorage.getItem(DISMISSED_KEY) === "true";
-    } catch {
-      /* Storage may be disabled. */
-    }
-    const installed = () =>
-      standalone.matches || iosNavigator.standalone === true;
     const show = () => {
-      setPlatform(
-        ios ? "ios" : /Android/i.test(navigator.userAgent) ? "android" : "ios",
-      );
+      setPlatform(/Android/i.test(navigator.userAgent) ? "android" : "ios");
       setOpen(true);
     };
-    const autoShow = () => {
-      if (installed()) {
-        setOpen(false);
-        return;
-      }
-      if (
-        dismissed ||
-        (!mobile && !smallScreen.matches) ||
-        window.location.pathname.startsWith("/auth/") ||
-        window.location.pathname === "/reset-password"
-      )
-        return;
-      if (document.querySelector('[role="dialog"]')) return;
-      show();
-    };
-    const onInstalled = () => {
-      dismissed = true;
-      setOpen(false);
-      try {
-        localStorage.setItem(DISMISSED_KEY, "true");
-      } catch {
-        /* Optional preference. */
-      }
-    };
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === DISMISSED_KEY && event.newValue === "true") {
-        dismissed = true;
-        setOpen(false);
-      }
-    };
-    const onDismiss = () => {
-      dismissed = true;
-    };
-    const timer = window.setTimeout(autoShow, 400);
-    smallScreen.addEventListener("change", autoShow);
-    standalone.addEventListener("change", autoShow);
-    window.addEventListener("appinstalled", onInstalled);
-    window.addEventListener("storage", onStorage);
+    const installed = () => setOpen(false);
     window.addEventListener(OPEN_EVENT, show);
-    window.addEventListener("bookcircle:install-guide-dismissed", onDismiss);
+    window.addEventListener("appinstalled", installed);
     return () => {
-      clearTimeout(timer);
-      smallScreen.removeEventListener("change", autoShow);
-      standalone.removeEventListener("change", autoShow);
-      window.removeEventListener("appinstalled", onInstalled);
-      window.removeEventListener("storage", onStorage);
       window.removeEventListener(OPEN_EVENT, show);
-      window.removeEventListener(
-        "bookcircle:install-guide-dismissed",
-        onDismiss,
-      );
+      window.removeEventListener("appinstalled", installed);
     };
   }, []);
 

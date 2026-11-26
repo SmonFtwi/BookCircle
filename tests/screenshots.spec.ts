@@ -14,9 +14,9 @@ test("390px review screens have no overflow or browser errors", async ({
   if (process.env.UPDATE_SCREENSHOTS)
     await mkdir("docs/screenshots", { recursive: true });
   for (const [name, url, heading] of [
-    ["home", "/home", "A little further, Alex."],
+    ["home", "/home", "Hi, Alex"],
     ["library", "/library", "Library"],
-    ["club", "/club/discuss", "A little perspective"],
+    ["club", "/club/discuss", "Discussions"],
     ["me", "/me", "Me"],
   ]) {
     await page.goto(url);

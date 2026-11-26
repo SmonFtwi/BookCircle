@@ -24,7 +24,7 @@ export function CreateRound() {
   const save = useMutation(api.club.saveVotingRound);
   return (
     <Modal
-      title="Choose our next chapter"
+      title="Start a book vote"
       open={open}
       onOpenChange={setOpen}
       trigger={
@@ -66,9 +66,8 @@ export function VotingPage() {
   return (
     <>
       <PageHeading
-        eyebrow="LET THE CIRCLE CHOOSE"
-        title="Our next good read"
-        description="One member, one vote. A whole new perspective ahead."
+        title="Vote for the next book"
+        description="Pick one book. You can change your choice until voting closes."
         action={membership.role !== "member" ? <CreateRound /> : undefined}
       />
       {feedback}
@@ -86,6 +85,13 @@ export function VotingPage() {
                 </div>
                 <Vote className="text-primary" />
               </div>
+              {r.status === "closed" && !r.winnerId && (
+                <p className="notice mb-4">
+                  {nominations.some((n) => (n.votes ?? 0) > 0)
+                    ? "It’s a tie. A club manager can open a new vote."
+                    : "No votes received. There is no winning book."}
+                </p>
+              )}
               <div className="library-grid">
                 {nominations.map((n) => (
                   <article className="library-card" key={n._id}>
@@ -194,7 +200,7 @@ export function CreateMeeting() {
   const save = useMutation(api.club.saveMeeting);
   return (
     <Modal
-      title="Make time for a good conversation"
+      title="Schedule a meeting"
       open={open}
       onOpenChange={setOpen}
       trigger={
@@ -327,20 +333,18 @@ export function InlineRSVP({
 export function MeetingsPage() {
   const rows = useQuery(api.club.meetings);
   const rsvp = useMutation(api.club.rsvp);
-  const reviewBook = useMutation(api.club.reviewBook);
   const { membership, profile } = useMember();
   if (!rows) return <Loading />;
   return (
     <>
       <PageHeading
-        eyebrow="BEYOND THE LAST PAGE"
-        title="Gather with your circle"
-        description="Make space for conversation, connection, and a new point of view."
+        title="Meetings"
+        description="See when you’re meeting and let the club know you’re coming."
         action={membership.role !== "member" ? <CreateMeeting /> : undefined}
       />
       <div className="stack">
         {rows.length ? (
-          rows.map(({ meeting: m, rsvp: r, review }) => (
+          rows.map(({ meeting: m, rsvp: r }) => (
             <section className="panel" key={m._id}>
               <div className="row mb-5">
                 <span className="date-block">
@@ -409,70 +413,10 @@ export function MeetingsPage() {
                     </Field>
                   </ActionForm>
                 </Modal>
-                {m.bookId && (
-                  <Modal
-                    title="Your monthly book review"
-                    trigger={
-                      <Button variant="outline">
-                        {review ? "Update book review" : "Prepare book review"}
-                      </Button>
-                    }
-                  >
-                    <ActionForm
-                      label="Save book review"
-                      onSubmit={(d) =>
-                        reviewBook({
-                          meetingId: m._id,
-                          lessons: [
-                            value(d, "lesson1"),
-                            value(d, "lesson2"),
-                            value(d, "lesson3"),
-                          ],
-                          applied: value(d, "applied"),
-                          changed: value(d, "changed"),
-                          improvement: value(d, "improvement"),
-                        })
-                      }
-                    >
-                      {[1, 2, 3].map((n) => (
-                        <Field key={n} label={`Main lesson ${n}`}>
-                          <textarea
-                            name={`lesson${n}`}
-                            required
-                            defaultValue={review?.lessons[n - 1]}
-                          />
-                        </Field>
-                      ))}
-                      <Field label="What did you apply?">
-                        <textarea
-                          name="applied"
-                          required
-                          defaultValue={review?.applied}
-                        />
-                      </Field>
-                      <Field label="What changed in your life?">
-                        <textarea
-                          name="changed"
-                          required
-                          defaultValue={review?.changed}
-                        />
-                      </Field>
-                      <Field label="What will you improve next month?">
-                        <textarea
-                          name="improvement"
-                          required
-                          defaultValue={review?.improvement}
-                        />
-                      </Field>
-                    </ActionForm>
-                  </Modal>
-                )}
                 {membership.role !== "member" && (
                   <Modal
                     title="Meeting agenda"
-                    trigger={
-                      <Button variant="outline">View agenda & reviews</Button>
-                    }
+                    trigger={<Button variant="outline">View attendees</Button>}
                   >
                     <Agenda id={m._id} />
                   </Modal>

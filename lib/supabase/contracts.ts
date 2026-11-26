@@ -300,7 +300,6 @@ export interface Contracts {
         endPage: number;
         pages: number;
         minutes: number;
-        notes: string;
       }[];
       encouragements: {
         _id: Id<"encouragements">;
@@ -325,7 +324,7 @@ export interface Contracts {
       round: {
         _id: Id<"votingRounds">;
         _creationTime: number;
-        winnerId?: Id<"books"> | undefined;
+        winnerId?: Id<"books"> | null;
         clubId: Id<"clubs">;
         status: "open" | "closed";
         title: string;
@@ -944,10 +943,18 @@ export interface Contracts {
       _id: Id<"reflections">;
       _creationTime: number;
       profileId: Id<"profiles">;
-      bookId: Id<"books">;
+      bookId: Id<"books"> | null;
       date: string;
       body: string;
     }[];
+  };
+  "reading.saveNote": {
+    args: { id?: Id<"reflections">; bookId?: Id<"books">; body: string };
+    result: Id<"reflections">;
+  };
+  "reading.deleteNote": {
+    args: { id: Id<"reflections"> };
+    result: null;
   };
   "reading.setGoals": {
     args: { pages: number; minutes: number; days: number };

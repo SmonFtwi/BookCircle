@@ -1,14 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Drawer } from "vaul";
-import {
-  ArrowLeft,
-  BookOpen,
-  Feather,
-  MessageCircle,
-  Trophy,
-  X,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, Feather, MessageCircle, X } from "lucide-react";
 import { useMutation, useQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import type { Id } from "@/lib/supabase/contracts";
@@ -22,44 +15,38 @@ import {
   value,
 } from "./primitives";
 import { Button } from "@/components/ui/button";
-import { EntryEditor } from "./challenge-forms";
-import { challengePhase, isManualChallenge } from "@/lib/challenges";
-import Link from "next/link";
-export type QuickAction = "reading" | "note" | "question" | "checkin";
+export type QuickAction = "reading" | "note" | "question";
 type Launch = {
   action?: QuickAction;
   bookId?: Id<"books">;
-  challengeId?: string;
   share?: boolean;
 };
 const EVENT = "bookcircle:quick-action";
 export function launchQuickAction(detail: Launch = {}) {
-  window.dispatchEvent(new CustomEvent(EVENT, { detail }));
+  const target =
+    detail.action === "note" && detail.share
+      ? { ...detail, action: "question" }
+      : detail;
+  window.dispatchEvent(new CustomEvent(EVENT, { detail: target }));
 }
 const choices = [
   {
     id: "reading",
     label: "Log reading",
-    hint: "A few pages. A little progress.",
+    hint: "Save your time and page.",
     icon: BookOpen,
   },
   {
     id: "note",
-    label: "Add a note",
-    hint: "Keep an idea close.",
+    label: "Private note",
+    hint: "Only you can see it.",
     icon: Feather,
   },
   {
     id: "question",
-    label: "Ask a question",
-    hint: "Let a conversation begin.",
+    label: "Post to club",
+    hint: "Share a thought or ask a question.",
     icon: MessageCircle,
-  },
-  {
-    id: "checkin",
-    label: "Challenge check-in",
-    hint: "Small steps, together.",
-    icon: Trophy,
   },
 ] as const;
 export function QuickActions() {
@@ -88,8 +75,10 @@ export function QuickActions() {
     setOpen(false);
     setToast(
       launch.action === "reading"
-        ? "Nice. A little closer to your next chapter."
-        : "Saved. One small step, worth keeping.",
+        ? "Reading saved."
+        : launch.action === "note" && !launch.share
+          ? "Note saved privately."
+          : "Posted to club.",
     );
     if (
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
@@ -97,8 +86,7 @@ export function QuickActions() {
     )
       navigator.vibrate(10);
   }
-  const title =
-    choices.find((c) => c.id === launch.action)?.label ?? "A little step today";
+  const title = choices.find((c) => c.id === launch.action)?.label ?? "Add";
   return (
     <>
       <Drawer.Root open={open} onOpenChange={setOpen} repositionInputs>
@@ -142,7 +130,9 @@ export function QuickActions() {
                 {choices.map((c) => (
                   <button
                     key={c.id}
-                    onClick={() => setLaunch({ action: c.id })}
+                    onClick={() =>
+                      setLaunch({ action: c.id, share: c.id === "question" })
+                    }
                   >
                     <span className="action-icon">
                       <c.icon size={24} strokeWidth={1.75} />
@@ -157,15 +147,11 @@ export function QuickActions() {
             ) : launch.action === "reading" ? (
               <ReadingForm bookId={launch.bookId} onSuccess={saved} />
             ) : launch.action === "note" ? (
-              <NoteForm initialShare={launch.share} onSuccess={saved} />
-            ) : launch.action === "question" ? (
-              <QuestionForm onSuccess={saved} />
+              <NoteForm onSuccess={saved} />
             ) : (
-              <CheckinForm
-                initialId={launch.challengeId}
+              <QuestionForm
+                initialType={launch.share ? "thought" : "question"}
                 onSuccess={saved}
-                onReading={() => setLaunch({ action: "reading" })}
-                onNote={() => setLaunch({ action: "note", share: true })}
               />
             )}
           </Drawer.Content>
@@ -248,16 +234,7 @@ function SessionForm({
           endPage: page,
           minutes,
           notes: value(d, "notes"),
-          reflection: value(d, "reflection"),
-          shareReflection: d.get("share") === "on",
-          ...(value(d, "commitment")
-            ? {
-                commitment: {
-                  title: value(d, "commitment"),
-                  targetDate: value(d, "targetDate"),
-                },
-              }
-            : {}),
+          shareReflection: false,
         })
       }
     >
@@ -343,83 +320,40 @@ function SessionForm({
           <Field label="Private notes">
             <textarea name="notes" maxLength={5000} />
           </Field>
-          <Field label="What stayed with you?">
-            <textarea name="reflection" maxLength={10000} />
-          </Field>
-          <label className="check-field">
-            <input name="share" type="checkbox" />
-            Share this reflection with the club
-          </label>
-          <Field label="Your next step">
-            <input name="commitment" maxLength={200} />
-          </Field>
-          <Field label="Target date">
-            <input
-              name="targetDate"
-              type="date"
-              defaultValue={dayInZone(profile.timezone)}
-            />
-          </Field>
         </div>
       </details>
     </ActionForm>
   );
 }
-function NoteForm({
-  initialShare = false,
-  onSuccess,
-}: {
-  initialShare?: boolean;
-  onSuccess: () => void;
-}) {
-  const { profile } = useMember();
-  const [share, setShare] = useState(initialShare);
+function NoteForm({ onSuccess }: { onSuccess: () => void }) {
   const books = useQuery(api.reading.library);
-  const mine = useQuery(api.reading.myBooks);
-  const create = useMutation(api.community.create);
-  const log = useMutation(api.reading.log);
-  if (!books || !mine) return <Loading />;
-  const current =
-    mine.find((b) => b.entry.status === "reading")?.book._id ?? books[0]?._id;
+  const save = useMutation(api.reading.saveNote);
+  if (!books) return <Loading />;
   return (
     <ActionForm
-      label={share ? "Share with club" : "Save note & reading"}
+      label="Save private note"
+      successMessage="Saved privately."
       onSuccess={onSuccess}
-      onSubmit={(d) => {
-        const body = value(d, "content").trim();
-        const bookId = value(d, "bookId") as Id<"books">;
-        if (share)
-          return create({
-            title: value(d, "title") || body.slice(0, 200),
-            content: body,
-            chapter: value(d, "chapter"),
-            ...(bookId ? { bookId } : {}),
-          });
-        const page =
-          mine.find((b) => b.book._id === bookId)?.entry.currentPage ?? 0;
-        return log({
-          bookId,
-          date: dayInZone(profile.timezone),
-          startPage: page,
-          endPage: page,
-          minutes: number(d, "minutes"),
-          notes: "",
-          reflection: body,
-          shareReflection: false,
-        });
-      }}
+      onSubmit={(d) =>
+        save({
+          body: value(d, "content").trim(),
+          ...(value(d, "bookId")
+            ? { bookId: value(d, "bookId") as Id<"books"> }
+            : {}),
+        })
+      }
     >
       <Field label="Your note">
         <textarea
           autoFocus
           name="content"
           required
-          maxLength={share ? 10000 : 10000}
+          maxLength={10000}
           placeholder="One idea I’m taking with me…"
         />
       </Field>
-      <Field label="Related book">
-        <select name="bookId" defaultValue={current ?? ""} required={!share}>
+      <Field label="Related book (optional)">
+        <select name="bookId" defaultValue="">
           <option value="">No related book</option>
           {books.map((b) => (
             <option key={b._id} value={b._id}>
@@ -428,59 +362,39 @@ function NoteForm({
           ))}
         </select>
       </Field>
-      <label className="check-field">
-        <input
-          type="checkbox"
-          checked={share}
-          onChange={(e) => setShare(e.target.checked)}
-        />
-        Share with club{" "}
-        <span className="meta">{share ? "Shared" : "Private"}</span>
-      </label>
-      {!share && (
-        <>
-          <p className="meta">
-            Private notes are saved with a reading session. Enter the minutes
-            you read; your page stays the same.
-          </p>
-          <Field label="Minutes read">
-            <input
-              name="minutes"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={1440}
-              required
-            />
-          </Field>
-        </>
-      )}
-      {share && (
-        <details className="optional-fields">
-          <summary>More options</summary>
-          <Field label="Title">
-            <input name="title" maxLength={200} />
-          </Field>
-          <Field label="Chapter">
-            <input name="chapter" maxLength={100} />
-          </Field>
-        </details>
-      )}
+      <p className="meta">Only you can see this note.</p>
     </ActionForm>
   );
 }
-function QuestionForm({ onSuccess }: { onSuccess: () => void }) {
+function QuestionForm({
+  initialType,
+  onSuccess,
+}: {
+  initialType: string;
+  onSuccess: () => void;
+}) {
   const categories = useQuery(api.forum.categories);
   const books = useQuery(api.reading.library);
   const ask = useMutation(api.forum.ask);
+  const create = useMutation(api.community.create);
+  const [kind, setKind] = useState(initialType);
   if (!categories || !books) return <Loading />;
   const active = categories.filter((c) => c.active);
   return (
     <ActionForm
-      label="Post question"
+      label="Post to club"
       onSuccess={onSuccess}
       onSubmit={(d) => {
         const content = value(d, "content").trim();
+        if (kind === "thought")
+          return create({
+            title: value(d, "title") || content.slice(0, 200),
+            content,
+            chapter: "",
+            ...(value(d, "bookId")
+              ? { bookId: value(d, "bookId") as Id<"books"> }
+              : {}),
+          });
         return ask({
           title: value(d, "title") || content.slice(0, 200),
           content,
@@ -492,35 +406,46 @@ function QuestionForm({ onSuccess }: { onSuccess: () => void }) {
         });
       }}
     >
-      <Field label="Your question">
+      <Field label="Post type">
+        <select value={kind} onChange={(e) => setKind(e.target.value)}>
+          <option value="thought">Thought</option>
+          <option value="question">Question</option>
+        </select>
+      </Field>
+      <Field label="Your message">
         <textarea
           name="content"
           autoFocus
           required
           maxLength={10000}
-          placeholder="What are you wondering about?"
+          placeholder="Share something from your reading…"
         />
       </Field>
-      <label className="check-field">
-        <input type="checkbox" name="anonymous" />
-        Post anonymously
-      </label>
-      <p className="meta">
-        Moderators and administrators can identify anonymous authors for
-        moderation.
-      </p>
+      <p className="meta">Visible to everyone in your club.</p>
+      {kind === "question" && (
+        <>
+          <label className="check-field">
+            <input type="checkbox" name="anonymous" />
+            Post anonymously
+          </label>
+          <p className="meta">
+            Moderators and administrators can identify anonymous authors for
+            moderation.
+          </p>
+        </>
+      )}
       <details className="optional-fields">
         <summary>More options</summary>
-        <Field label="Question title">
+        <Field label="Title (optional)">
           <input name="title" maxLength={200} />
         </Field>
         <Field label="Category">
           <select
             name="categoryId"
-            required
+            required={kind === "question"}
             defaultValue={active[0]?._id ?? ""}
           >
-            {!active.length && (
+            {kind === "question" && !active.length && (
               <option value="">No categories available</option>
             )}
             {active.map((c) => (
@@ -541,101 +466,11 @@ function QuestionForm({ onSuccess }: { onSuccess: () => void }) {
           </select>
         </Field>
       </details>
-      {!active.length && (
+      {kind === "question" && !active.length && (
         <p role="alert">
           A club manager needs to add a question category first.
         </p>
       )}
     </ActionForm>
-  );
-}
-function CheckinForm({
-  initialId,
-  onSuccess,
-  onReading,
-  onNote,
-}: {
-  initialId?: string;
-  onSuccess: () => void;
-  onReading: () => void;
-  onNote: () => void;
-}) {
-  const { profile } = useMember();
-  const rows = useQuery(api.club.challenges);
-  const [id, setId] = useState(initialId ?? "");
-  if (!rows) return <Loading />;
-  const active = rows.filter(
-    (r) =>
-      r.joined &&
-      challengePhase(r.challenge, dayInZone(profile.timezone)) === "Active",
-  );
-  const row = active.find((r) => r.challenge._id === id) ?? active[0];
-  if (!row)
-    return (
-      <div className="stack">
-        <p>Join a challenge and take a little step each day.</p>
-        <Button asChild>
-          <Link
-            href="/club/challenges"
-            onClick={() =>
-              window.dispatchEvent(new Event("bookcircle:close-quick-action"))
-            }
-          >
-            Explore challenges
-          </Link>
-        </Button>
-      </div>
-    );
-  return (
-    <div className="stack">
-      <Field label="Challenge">
-        <select
-          value={row.challenge._id}
-          onChange={(e) => setId(e.target.value)}
-        >
-          {active.map((r) => (
-            <option key={r.challenge._id} value={r.challenge._id}>
-              {r.challenge.title}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {isManualChallenge(row.challenge) ? (
-        <EntryEditor key={row.challenge._id} row={row} onSuccess={onSuccess} />
-      ) : (
-        <>
-          <p>
-            This challenge counts your{" "}
-            {row.challenge.goalType === "commitments"
-              ? "completed commitments"
-              : row.challenge.goalType === "insights"
-                ? "shared insights"
-                : "reading"}{" "}
-            automatically.
-          </p>
-          {row.challenge.goalType === "commitments" ? (
-            <Link
-              className="primary-link"
-              href="/me?section=accountability"
-              onClick={() =>
-                window.dispatchEvent(new Event("bookcircle:close-quick-action"))
-              }
-            >
-              View commitments
-            </Link>
-          ) : (
-            <Button
-              onClick={
-                row.challenge.goalType === "insights" ? onNote : onReading
-              }
-            >
-              {row.challenge.goalType === "insights"
-                ? "Share an insight"
-                : "Log reading"}
-            </Button>
-          )}
-        </>
-      )}
-    </div>
   );
 }

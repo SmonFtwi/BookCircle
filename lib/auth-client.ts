@@ -11,6 +11,14 @@ export const authClient = {
       return { data, error: null };
     },
   },
+  resendConfirmation: async ({ email }: { email: string }) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    return { error: error ? { message: error.message } : null };
+  },
   signOut: async () => {
     const { error } = await supabase.auth.signOut();
     if (error) return { error: { message: error.message } };

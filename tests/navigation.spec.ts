@@ -43,9 +43,9 @@ test("four tabs, legacy redirects, and member management isolation", async ({
     page.getByRole("heading", { name: "Club management", exact: true }),
   ).toHaveCount(0);
   await page.goto("/challenges");
-  await expect(page).toHaveURL(/\/club\/challenges$/);
+  await expect(page).toHaveURL(/\/club\/discuss$/);
   await expect(
-    page.getByRole("heading", { name: "Less screen time", exact: true }),
+    page.getByRole("heading", { name: "Discussions", exact: true }),
   ).toBeVisible();
 });
 test("quick-action reading uses current page and updates the screen behind it", async ({
@@ -67,7 +67,7 @@ test("quick-action reading uses current page and updates the screen behind it", 
     .click();
   await expect(sheet).not.toBeVisible();
   await expect(
-    page.getByRole("status").filter({ hasText: "Nice." }),
+    page.getByRole("status").filter({ hasText: "Reading saved." }),
   ).toBeVisible();
   expect(calls.find((c) => c.operation === "reading.log")?.args).toMatchObject({
     startPage: 42,
@@ -116,7 +116,7 @@ test("moderator sees content management but never Invitations", async ({
     management.getByRole("link", { name: "Members", exact: true }),
   ).toHaveCount(0);
 });
-test("private note defaults, honest anonymity, and drawer check-in", async ({
+test("private notes save without reading activity and club questions stay explicit", async ({
   page,
 }) => {
   const { calls } = await mockCircle(page, "member");
@@ -127,58 +127,44 @@ test("private note defaults, honest anonymity, and drawer check-in", async ({
       .click();
   await launch();
   let sheet = page.getByRole("dialog");
-  await sheet.getByRole("button", { name: "Add a note", exact: false }).click();
-  await expect(sheet.getByLabel("Share with club")).not.toBeChecked();
+  await expect(sheet.getByRole("button", { name: /Challenge/ })).toHaveCount(0);
+  await sheet.getByRole("button", { name: /Private note/ }).click();
+  await expect(sheet.getByLabel("Minutes read")).toHaveCount(0);
+  await expect(sheet.getByLabel("Related book (optional)")).toHaveValue("");
   await sheet.getByLabel("Your note").fill("A private idea worth keeping.");
-  await sheet.getByLabel("Minutes read").fill("12");
   await sheet
-    .getByRole("button", { name: "Save note & reading", exact: true })
+    .getByRole("button", { name: "Save private note", exact: true })
     .click();
   await expect(sheet).not.toBeVisible();
-  expect(calls.find((c) => c.operation === "reading.log")?.args).toMatchObject({
-    minutes: 12,
-    startPage: 42,
-    endPage: 42,
-    reflection: "A private idea worth keeping.",
-    shareReflection: false,
+  expect(calls.find((c) => c.operation === "reading.saveNote")?.args).toEqual({
+    body: "A private idea worth keeping.",
   });
-  expect(calls.some((c) => c.operation === "community.create")).toBe(false);
+  expect(
+    calls.some(
+      (c) =>
+        c.operation === "reading.log" || c.operation === "community.create",
+    ),
+  ).toBe(false);
+  await page.goto("/me?section=notes");
+  await expect(page.getByText("A private idea worth keeping.")).toBeVisible();
   await launch();
   sheet = page.getByRole("dialog");
-  await sheet
-    .getByRole("button", { name: "Ask a question", exact: false })
-    .click();
+  await sheet.getByRole("button", { name: /Post to club/ }).click();
+  await sheet.getByLabel("Post type").selectOption("question");
   await expect(
     sheet.getByText(
       "Moderators and administrators can identify anonymous authors for moderation.",
     ),
   ).toBeVisible();
   await sheet
-    .getByLabel("Your question")
+    .getByLabel("Your message")
     .fill("How do you choose your next book?");
   await sheet.getByLabel("Post anonymously").check();
   await sheet
-    .getByRole("button", { name: "Post question", exact: true })
+    .getByRole("button", { name: "Post to club", exact: true })
     .click();
   await expect(sheet).not.toBeVisible();
   expect(calls.find((c) => c.operation === "forum.ask")?.args.anonymous).toBe(
-    true,
-  );
-  await launch();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Challenge check-in", exact: false })
-    .click();
-  await page
-    .getByRole("dialog")
-    .getByLabel("Daily amount (minutes)")
-    .fill("45");
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Save entry", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).not.toBeVisible();
-  expect(calls.some((c) => c.operation === "club.saveChallengeEntry")).toBe(
     true,
   );
 });

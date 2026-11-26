@@ -1,29 +1,19 @@
 "use client";
 import { launchQuickAction } from "./quick-actions";
-import { ForumReactions } from "./forum-reactions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, usePaginatedQuery } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import type { Id } from "@/lib/supabase/contracts";
-import {
-  ArrowUp,
-  Plus,
-  Pin,
-  LockKeyhole,
-  CheckCircle,
-  Search,
-} from "lucide-react";
+import { ArrowUp, Plus, Pin, LockKeyhole, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ActionForm,
   Field,
   Modal,
   value,
-  PageHeading,
   Loading,
-  Empty,
   useFeedback,
 } from "./primitives";
 import { useMember } from "./shell";
@@ -40,7 +30,7 @@ export function AskQuestion({ trigger }: { trigger?: React.ReactNode }) {
   );
 }
 type Question = NonNullable<Awaited<ReturnType<typeof api.forum.detail>>>;
-function QuestionCard({ q }: { q: Question }) {
+export function QuestionCard({ q }: { q: Question }) {
   return (
     <article className="discussion-card">
       <div className="row between">
@@ -84,119 +74,6 @@ function QuestionCard({ q }: { q: Question }) {
         </span>
       </div>
     </article>
-  );
-}
-export function ForumPage() {
-  const [mode, setMode] = useState<
-    "recent" | "trending" | "unanswered" | "mine"
-  >("recent");
-  const [categoryId, setCategory] = useState<
-    Id<"forumCategories"> | undefined
-  >();
-  const [search, setSearch] = useState("");
-  const categories = useQuery(api.forum.categories);
-  const list = usePaginatedQuery(
-    api.forum.list,
-    { mode, ...(categoryId ? { categoryId } : {}) },
-    { initialNumItems: 15 },
-  );
-  const found = useQuery(
-    api.forum.search,
-    search.trim() ? { text: search } : "skip",
-  );
-  const questions = search.trim() ? found : list.results;
-  return (
-    <>
-      <PageHeading
-        eyebrow="GOOD CONVERSATIONS START HERE"
-        title="Conversations"
-        description="A question, a new perspective, a little connection."
-        action={<AskQuestion />}
-      />
-      <section className="discussion-toolbar" aria-label="Conversation filters">
-        <div className="library-search">
-          <Search size={20} aria-hidden="true" />
-          <input
-            type="search"
-            aria-label="Search questions"
-            placeholder="Find a conversation"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="discussion-filters">
-          <Field label="Topic">
-            <select
-              disabled={!!search.trim()}
-              value={categoryId ?? ""}
-              onChange={(e) =>
-                setCategory(
-                  e.target.value
-                    ? (e.target.value as Id<"forumCategories">)
-                    : undefined,
-                )
-              }
-            >
-              <option value="">All topics</option>
-              {categories
-                ?.filter((c) => c.active)
-                .map((c) => (
-                  <option value={c._id} key={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </Field>
-          <Field label="Show">
-            <select
-              disabled={!!search.trim()}
-              value={mode}
-              onChange={(e) => setMode(e.target.value as typeof mode)}
-            >
-              <option value="recent">Recent</option>
-              <option value="trending">Trending</option>
-              <option value="unanswered">Unanswered</option>
-              <option value="mine">My questions</option>
-            </select>
-          </Field>
-        </div>
-        {search.trim() && <p className="meta">Searching across all topics.</p>}
-      </section>
-      <section className="discussion-feed" aria-label="Conversations">
-        {questions === undefined || (!search.trim() && list.isLoading) ? (
-          <Loading />
-        ) : questions.length ? (
-          questions.map((q) => <QuestionCard key={q.id} q={q} />)
-        ) : (
-          <div className="panel">
-            <Empty
-              title="No conversations here yet"
-              description="Try another filter, or start a conversation of your own."
-              action={
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearch("");
-                    setCategory(undefined);
-                    setMode("recent");
-                  }}
-                >
-                  Reset filters
-                </Button>
-              }
-            />
-          </div>
-        )}
-        {!search && list.status === "CanLoadMore" && (
-          <Button variant="outline" onClick={() => list.loadMore(15)}>
-            Load more conversations
-          </Button>
-        )}
-      </section>
-      <p className="discussion-guidance">
-        Be curious. Be kind. Every perspective has a place here.
-      </p>
-    </>
   );
 }
 function AnswerForm({
@@ -273,7 +150,6 @@ export function QuestionPage({ id }: { id: string }) {
           {q.bookTitle ? ` · ${q.bookTitle}` : ""}
         </p>
         <p className="prose">{q.content}</p>
-        <ForumReactions target={{ questionId: id }} />
         <div className="reaction-row">
           <button
             disabled={q.isMine || busy}
@@ -388,7 +264,6 @@ export function QuestionPage({ id }: { id: string }) {
               )}
             </div>
             <p className="prose mt-3">{a.content}</p>
-            {!a.removed && <ForumReactions target={{ answerId: a.id }} />}
             {!a.removed && (
               <div className="reaction-row">
                 <button

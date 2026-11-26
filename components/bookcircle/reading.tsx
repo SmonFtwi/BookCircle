@@ -21,7 +21,6 @@ import {
   useFeedback,
 } from "./primitives";
 import { useMember } from "./shell";
-import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from "recharts";
 export function BookSelect({
   name = "bookId",
   optional = false,
@@ -232,32 +231,22 @@ export function Goals() {
   const save = useMutation(api.reading.setGoals);
   return (
     <Modal
-      title="A goal that fits your life"
-      description="Small, steady steps. Your goals are here to encourage you."
+      title="Weekly reading goal"
+      description="Choose how many minutes you want to read each week."
       open={open}
       onOpenChange={setOpen}
-      trigger={<Button variant="outline">Edit goals</Button>}
+      trigger={<Button variant="outline">Edit goal</Button>}
     >
       <ActionForm
         onSuccess={() => setOpen(false)}
         onSubmit={(d) =>
           save({
-            pages: number(d, "pages"),
+            pages: stats?.goals.pages ?? 100,
             minutes: number(d, "minutes"),
-            days: number(d, "days"),
+            days: stats?.goals.days ?? 5,
           })
         }
       >
-        <Field label="Pages per week">
-          <input
-            name="pages"
-            type="number"
-            min={0}
-            max={10000}
-            required
-            defaultValue={stats?.goals.pages}
-          />
-        </Field>
         <Field label="Minutes per week">
           <input
             name="minutes"
@@ -266,16 +255,6 @@ export function Goals() {
             max={10080}
             required
             defaultValue={stats?.goals.minutes}
-          />
-        </Field>
-        <Field label="Reading days per week">
-          <input
-            name="days"
-            type="number"
-            min={1}
-            max={7}
-            required
-            defaultValue={stats?.goals.days}
           />
         </Field>
       </ActionForm>
@@ -306,9 +285,8 @@ export function ReadingPage() {
   return (
     <>
       <PageHeading
-        eyebrow="A WORLD BETWEEN THE COVERS"
         title="Library"
-        description="Find your next good read. Make it your own."
+        description="Find a book or pick up where you left off."
       />
       <div className="library-search">
         <Search size={20} aria-hidden="true" />
@@ -501,46 +479,13 @@ export function ReadingPage() {
 }
 
 export function ReadingHistory() {
-  const { profile } = useMember();
   const library = useQuery(api.reading.library);
-  const stats = useQuery(api.reading.stats, {
-    today: dayInZone(profile.timezone),
-  });
   const logs = usePaginatedQuery(api.reading.logs, {}, { initialNumItems: 10 });
-  if (!library || !stats) return <Loading />;
+  if (!library || logs.isLoading) return <Loading />;
   return (
     <>
       {" "}
-      <div className="grid-main spaced">
-        <section className="panel">
-          <div className="section-head">
-            <h2>Your reading rhythm</h2>
-            <span className="tag">Last 14 reading days</span>
-          </div>
-          <div className="stat-chart">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.calendar.slice(0, 14).reverse()}>
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(s) => s.slice(5)}
-                  tick={{ fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip />
-                <Bar
-                  dataKey="minutes"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="meta">
-            {stats.week.minutes} / {stats.goals.minutes} minutes this week ·{" "}
-            {stats.week.days} / {stats.goals.days} reading days
-          </p>
-        </section>
+      <div className="stack">
         <section className="panel">
           <h2 className="mb-4">Recent sessions</h2>
           {logs.results.length ? (

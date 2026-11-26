@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useMutation, useAction } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
-import type { Id } from "@/lib/supabase/contracts";
 import { Button } from "@/components/ui/button";
 import { Plus, Copy, ShieldCheck } from "lucide-react";
 import {
@@ -19,7 +18,6 @@ import {
 } from "./primitives";
 import { useMember } from "./shell";
 import { AddBook } from "./reading";
-import { CreateChallenge } from "./challenges";
 import { CreateMeeting, CreateRound } from "./events";
 export function AdminPage() {
   const { membership } = useMember();
@@ -35,7 +33,6 @@ export function AdminPage() {
 function AdminContent() {
   const { membership, profile } = useMember();
   const isAdmin = membership.role === "admin";
-  const directory = useQuery(api.profiles.directory);
   const summary = useQuery(api.admin.overview);
   const members = useQuery(api.admin.members, isAdmin ? {} : "skip");
   const invitations = useQuery(api.admin.invitations, isAdmin ? {} : "skip");
@@ -46,24 +43,17 @@ function AdminContent() {
   const setRole = useMutation(api.admin.setMemberRole);
   const status = useMutation(api.admin.setMemberStatus);
   const resolve = useMutation(api.admin.resolveReport);
-  const pair = useMutation(api.club.pairMembers);
   const prompt = useMutation(api.admin.setWeeklyPrompt);
   const category = useMutation(api.admin.saveCategory);
   const [code, setCode] = useState("");
   const { run, busy, feedback } = useFeedback();
-  if (
-    !summary ||
-    !directory ||
-    !reports ||
-    (isAdmin && (!members || !invitations))
-  )
+  if (!summary || !reports || (isAdmin && (!members || !invitations)))
     return <Loading />;
   return (
     <>
       <PageHeading
-        eyebrow="CARE FOR YOUR CIRCLE"
         title={isAdmin ? "Club administration" : "Content management"}
-        description="A few thoughtful tools to help your community thrive."
+        description="Manage members, books, and discussions."
         action={<ShieldCheck className="text-primary" />}
       />
       <div className="stat-grid mb-6">
@@ -80,7 +70,6 @@ function AdminContent() {
       </div>
       <div className="pill-row mb-6" id="library">
         <AddBook />
-        <CreateChallenge />
         <CreateMeeting />
         <CreateRound />
       </div>
@@ -319,34 +308,6 @@ function AdminContent() {
           </section>
         </div>
         <aside className="stack">
-          <section className="panel" id="partners">
-            <h2 className="mb-4">Accountability partners</h2>
-            <ActionForm
-              label="Pair members"
-              onSubmit={(d) =>
-                pair({
-                  firstId: value(d, "first") as Id<"profiles">,
-                  secondId: value(d, "second") as Id<"profiles">,
-                })
-              }
-            >
-              {["first", "second"].map((key, i) => (
-                <Field key={key} label={`Member ${i + 1}`}>
-                  <select name={key} required defaultValue="">
-                    <option value="">Choose a member</option>
-                    {directory.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              ))}
-              <p className="meta">
-                Assigning a new pair replaces their previous pairings.
-              </p>
-            </ActionForm>
-          </section>
           <section className="panel" id="prompts">
             <h2 className="mb-4">Weekly discussion</h2>
             <ActionForm

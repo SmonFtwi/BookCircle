@@ -9,12 +9,7 @@ import { ArrowRight, LockKeyhole, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/supabase/api";
 import { Button } from "@/components/ui/button";
-import {
-  Logo,
-  Field,
-  Cover,
-  errorText,
-} from "@/components/bookcircle/primitives";
+import { Logo, Field, errorText } from "@/components/bookcircle/primitives";
 const formSchema = z.object({
   email: z.string().email("Enter a valid email address."),
   password: z.string().min(1, "Enter your password."),
@@ -23,7 +18,13 @@ const formSchema = z.object({
   confirm: z.string(),
 });
 type Values = z.infer<typeof formSchema>;
-export default function Welcome({ invite = "" }: { invite?: string }) {
+export default function Welcome({
+  invite = "",
+  authError,
+}: {
+  invite?: string;
+  authError?: string;
+}) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [mode, setMode] = useState<"login" | "join" | "reset">(
@@ -34,8 +35,13 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
   const [verified, setVerified] = useState(false);
   const validate = useAction(api.registration.validateInvitation);
   const configuration = useQuery(api.profiles.configuration);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    authError
+      ? "This email link has expired or is invalid. Request a new confirmation email below, or use Forgot your password for a new reset link."
+      : "",
+  );
   const [notice, setNotice] = useState("");
+  const [showResend, setShowResend] = useState(!!authError);
   const registerAccount = useAction(api.registration.register);
 
   useEffect(() => {
@@ -45,6 +51,7 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
   }, [isAuthenticated, invite, router]);
   const {
     register,
+    getValues,
     handleSubmit,
     formState: { errors },
   } = useForm<Values>({
@@ -72,6 +79,7 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
         setNotice(
           "Account created. Check your email to confirm your address, then sign in.",
         );
+        setShowResend(true);
         setMode("login");
         return;
       }
@@ -94,20 +102,12 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
         <section className="welcome-story">
           <Logo />
           <div>
-            <p className="eyebrow">GOOD BOOKS. BETTER TOGETHER.</p>
             <h1>
-              A little reading.
-              <br />A lot of growing.
+              Your book club,
+              <br />
+              in one place.
             </h1>
-            <p>
-              Make room for meaningful stories, thoughtful conversations, and a
-              circle that keeps you going.
-            </p>
-          </div>
-          <div className="welcome-art" aria-hidden="true">
-            <Cover title="Read" author="Make a little time" />
-            <Cover title="Reflect" author="Find your own meaning" />
-            <Cover title="Apply" author="Let an idea take root" />
+            <p>Choose a book. Track your reading. Talk about it together.</p>
           </div>
           <div className="welcome-footer">
             <LockKeyhole size={14} />
@@ -117,14 +117,14 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
         <section className="auth-card">
           <h2>
             {mode === "join"
-              ? "Find your place in the circle."
+              ? "Join your book club"
               : mode === "reset"
-                ? "Let’s get you back in."
-                : "Welcome to your next chapter."}
+                ? "Reset your password"
+                : "Sign in"}
           </h2>
           <p>
             {mode === "join"
-              ? "A good book brings us together. Your invitation is your way in."
+              ? "Use your invitation to create an account."
               : mode === "reset"
                 ? "Enter your email to request a password reset link."
                 : "Sign in to pick up where you left off."}
@@ -147,7 +147,7 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
                   setError("");
                 }}
               >
-                Join Book Club
+                Join with invitation
               </button>
             </div>
           )}
@@ -180,7 +180,7 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
                 />
               </Field>
               <Button disabled={busy}>
-                Validate invitation <ArrowRight />
+                Continue <ArrowRight />
               </Button>
             </form>
           ) : mode === "reset" ? (
@@ -300,12 +300,41 @@ export default function Welcome({ invite = "" }: { invite?: string }) {
               <Button disabled={busy} type="submit">
                 {busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}
                 {busy
-                  ? "Opening your circle…"
+                  ? "Please wait…"
                   : mode === "join"
-                    ? "Join the circle"
+                    ? "Create account"
                     : "Sign in"}
               </Button>
             </form>
+          )}
+          {showResend && mode === "login" && (
+            <Button
+              variant="outline"
+              className="mt-4"
+              disabled={busy}
+              onClick={async () => {
+                const email = getValues("email").trim();
+                if (!email) {
+                  setError(
+                    "Enter your email address above, then request a new confirmation email.",
+                  );
+                  return;
+                }
+                setBusy(true);
+                setError("");
+                try {
+                  const result = await authClient.resendConfirmation({ email });
+                  if (result.error) throw new Error(result.error.message);
+                  setNotice("Check your email for a new confirmation link.");
+                } catch (e) {
+                  setError(errorText(e));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Resend confirmation email
+            </Button>
           )}
           {error && (
             <p className="error-message spaced" role="alert">

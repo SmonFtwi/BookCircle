@@ -1,7 +1,7 @@
 begin;
 -- Full application flows and isolation checks. Every fixture rolls back.
 do $$
-declare c uuid; other_club uuid; admin_id uuid=gen_random_uuid(); member_id uuid=gen_random_uuid(); stranger_id uuid=gen_random_uuid(); book uuid; category uuid; question uuid; answer uuid; post uuid; commitment uuid; challenge uuid; round_id uuid; meeting uuid; nomination uuid; code text=upper('TEST-'||gen_random_uuid()); j jsonb; inv jsonb; op text; rejected boolean; member_membership uuid; admin_membership uuid; foreign_membership uuid; staff_post uuid; staff_question uuid; staff_answer uuid; staff_book uuid;
+declare c uuid; other_club uuid; admin_id uuid=gen_random_uuid(); member_id uuid=gen_random_uuid(); stranger_id uuid=gen_random_uuid(); book uuid; category uuid; question uuid; answer uuid; post uuid; commitment uuid; challenge uuid; round_id uuid; meeting uuid; nomination uuid; code text=upper('TEST-'||gen_random_uuid()); j jsonb; inv jsonb; op text; rejected boolean; member_membership uuid; admin_membership uuid; foreign_membership uuid; staff_post uuid; staff_question uuid; staff_answer uuid; staff_book uuid; private_note uuid; before_sessions int; second_nomination uuid; second_book uuid; tie_round uuid;
 begin
  insert into public.clubs(name) values('TEST transaction') returning id into c;
  insert into public.club_revisions(club_id) values(c);
@@ -36,6 +36,22 @@ begin
  perform public.bookcircle_mutate('reading.log',jsonb_build_object('bookId',book,'date',current_date,'startPage',0,'endPage',25,'minutes',30,'notes','Private note','reflection','Private reflection','commitment',jsonb_build_object('title','Apply it','targetDate',current_date+7)));
  j=public.bookcircle_query('reading.stats','{}');if (j->'totals'->>'pages')::int<>25 or (j->>'streak')::int<>1 then raise exception 'Incorrect reading stats: %',j;end if;
  j=public.bookcircle_query('reading.reflections','{}');if jsonb_typeof(j)<>'array' then raise exception 'Reflections must be an array';end if;
+ -- Standalone private notes neither require a book nor fabricate reading activity.
+ before_sessions=(public.bookcircle_query('reading.stats')->'totals'->>'sessions')::int;
+ private_note=(public.bookcircle_mutate('reading.saveNote','{"body":"Standalone secret"}')#>>'{}')::uuid;
+ j=public.bookcircle_query('reading.reflections');
+ if not exists(select 1 from jsonb_array_elements(j) n where n->>'_id'=private_note::text and n->>'body'='Standalone secret' and n->>'bookId' is null) then raise exception 'Standalone note missing'; end if;
+ if (public.bookcircle_query('reading.stats')->'totals'->>'sessions')::int<>before_sessions then raise exception 'Private note fabricated reading'; end if;
+ perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ rejected=false;begin perform public.bookcircle_mutate('reading.deleteNote',jsonb_build_object('id',private_note));exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Admin deleted another member note';end if;
+ perform set_config('request.jwt.claim.sub',stranger_id::text,true);
+ j=public.bookcircle_query('reading.reflections');if j::text like '%Standalone secret%' then raise exception 'Cross-club note leaked';end if;
+ rejected=false;begin perform public.bookcircle_mutate('reading.saveNote',jsonb_build_object('id',private_note,'body','Overwrite'));exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Cross-club note edit allowed';end if;
+ rejected=false;begin perform public.bookcircle_mutate('reading.saveNote',jsonb_build_object('bookId',book,'body','Wrong club'));exception when others then rejected=true;end;if not rejected then raise exception 'Foreign book note allowed';end if;
+ perform set_config('request.jwt.claim.sub',member_id::text,true);
+ perform public.bookcircle_mutate('reading.saveNote',jsonb_build_object('id',private_note,'bookId',book,'body','Edited private note'));
+ perform public.bookcircle_mutate('reading.deleteNote',jsonb_build_object('id',private_note));
+ j=public.bookcircle_query('reading.reflections');if j::text like '%Edited private note%' then raise exception 'Note deletion failed';end if;
  post=(public.bookcircle_mutate('community.create',jsonb_build_object('title','Insight','content','A useful idea','chapter','1','bookId',book))#>>'{}')::uuid;
  perform public.bookcircle_mutate('community.react',jsonb_build_object('id',post,'type','helpful'));
  perform public.bookcircle_mutate('community.comment',jsonb_build_object('id',post,'content','Follow up'));
@@ -64,6 +80,12 @@ begin
  perform set_config('request.jwt.claim.sub',admin_id::text,true);
  perform public.bookcircle_mutate('club.pairMembers',jsonb_build_object('firstId',admin_id,'secondId',member_id));
  j=public.bookcircle_query('club.partner');if jsonb_array_length(j->'readingLogs')<>0 or jsonb_array_length(j->'commitments')<>1 then raise exception 'Partner privacy failed: %',j;end if;
+ -- Opting into exact logs never opts private text into sharing.
+ perform set_config('request.jwt.claim.sub',member_id::text,true);
+ perform public.bookcircle_mutate('profiles.update','{"name":"Member","timezone":"UTC","shareReadingDetails":true,"notificationsEnabled":true}');
+ perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ j=public.bookcircle_query('club.partner');
+ if jsonb_array_length(j->'readingLogs')=0 or j::text like '%Private note%' or j::text like '%Private reflection%' or exists(select 1 from jsonb_array_elements(j->'readingLogs') l where l ? 'notes') then raise exception 'Private text leaked through partner sharing';end if;
  perform public.bookcircle_mutate('club.encourage','{"message":"Keep going!"}');
  challenge=(public.bookcircle_mutate('club.saveChallenge',jsonb_build_object('title','Read daily','description','Test','startDate',current_date,'endDate',current_date+7,'goalType','minutes','target',30))#>>'{}')::uuid;
  round_id=(public.bookcircle_mutate('club.saveVotingRound',jsonb_build_object('title','Next book','deadline',extract(epoch from now()+interval '1 day')*1000))#>>'{}')::uuid;
@@ -145,10 +167,33 @@ begin
  perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','admin'));
  perform public.bookcircle_mutate('admin.setMemberRole',jsonb_build_object('id',member_membership,'role','member'));
 
+ -- No-vote and tied rounds have no winner; a unique positive leader does.
+ perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ second_book=(public.bookcircle_mutate('reading.addBook','{"title":"Second book","author":"Author","totalPages":200,"category":"Growth","description":"","coverUrl":""}')#>>'{}')::uuid;
+ tie_round=(public.bookcircle_mutate('club.saveVotingRound',jsonb_build_object('title','Tie test','deadline',extract(epoch from now()+interval '1 day')*1000))#>>'{}')::uuid;
+ perform public.bookcircle_mutate('club.nominate',jsonb_build_object('roundId',tie_round,'bookId',book));
+ perform public.bookcircle_mutate('club.nominate',jsonb_build_object('roundId',tie_round,'bookId',second_book));
+ perform set_config('role','none',true);
+ if private.winner(tie_round) is not null then raise exception 'Zero votes produced a winner';end if;
+ select id into nomination from public.book_nominations where book_nominations.round_id=tie_round and book_id=book;
+ select id into second_nomination from public.book_nominations bn where bn.round_id=tie_round and bn.book_id=second_book;
+ perform set_config('role','authenticated',true);
+ perform public.bookcircle_mutate('club.vote',jsonb_build_object('nominationId',nomination));
+ perform set_config('role','none',true);
+ if private.winner(tie_round) is distinct from book then raise exception 'Unique leader missing';end if;
+ perform set_config('role','authenticated',true);perform set_config('request.jwt.claim.sub',member_id::text,true);
+ perform public.bookcircle_mutate('club.vote',jsonb_build_object('nominationId',second_nomination));
+ perform set_config('role','none',true);
+ if private.winner(tie_round) is not null then raise exception 'Tie produced arbitrary winner';end if;
+ perform set_config('role','authenticated',true);perform set_config('request.jwt.claim.sub',admin_id::text,true);
+ perform public.bookcircle_mutate('club.closeVoting',jsonb_build_object('id',tie_round));
+ j=public.bookcircle_query('club.votingRounds');
+ if exists(select 1 from jsonb_array_elements(j) v where v->'round'->>'_id'=tie_round::text and v->'round'->>'winnerId' is not null) then raise exception 'Closed tie has a winner';end if;
  perform set_config('role','none',true);
  update public.memberships set status='inactive' where profile_id=member_id;
  perform set_config('request.jwt.claim.sub',member_id::text,true);perform set_config('role','authenticated',true);
  rejected=false;begin perform public.bookcircle_query('reading.library');exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Inactive member access';end if;
+ rejected=false;begin perform public.bookcircle_mutate('reading.saveNote','{"body":"Inactive note"}');exception when insufficient_privilege then rejected=true;end;if not rejected then raise exception 'Inactive member saved a note';end if;
  perform set_config('role','none',true);
 end $$;
 rollback;

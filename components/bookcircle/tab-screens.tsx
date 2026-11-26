@@ -2,30 +2,20 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import {
-  MessageCircle,
-  Vote,
-  CalendarDays,
-  Trophy,
-  ArrowLeft,
-} from "lucide-react";
+import { MessageCircle, Vote, CalendarDays, ArrowLeft } from "lucide-react";
 import { ReadingHistory } from "./reading";
 import { AppearanceSettings } from "./appearance";
-import { ForumPage } from "./forum";
-import { CommunityPage } from "./community";
+import { Discussions } from "./discussions";
 import { MeetingsPage, VotingPage } from "./events";
-import { ChallengesPage } from "./challenges";
 import { ProfileOverview, ProfileSettings, PrivateNotes } from "./profile";
-import { AccountabilityPage } from "./accountability";
 import { AdminPage } from "./admin";
 import { useMember } from "./shell";
 import { Loading, PageHeading } from "./primitives";
 
 const sections = [
-  ["discuss", "Discuss", MessageCircle],
+  ["discuss", "Discussions", MessageCircle],
   ["vote", "Vote", Vote],
   ["meetings", "Meetings", CalendarDays],
-  ["challenges", "Challenges", Trophy],
 ] as const;
 
 export function ClubScreen({ section }: { section: string }) {
@@ -50,32 +40,12 @@ export function ClubScreen({ section }: { section: string }) {
           </Link>
         ))}
       </nav>
-      {(section === "discuss" || section === "insights") && (
-        <nav className="discussion-views" aria-label="Discussion views">
-          <Link
-            href="/club/discuss"
-            aria-current={section === "discuss" ? "page" : undefined}
-          >
-            Questions
-          </Link>
-          <Link
-            href="/club/insights"
-            aria-current={section === "insights" ? "page" : undefined}
-          >
-            Shared insights
-          </Link>
-        </nav>
-      )}
       {section === "vote" ? (
         <VotingPage />
       ) : section === "meetings" ? (
         <MeetingsPage />
-      ) : section === "challenges" ? (
-        <ChallengesPage />
-      ) : section === "insights" ? (
-        <CommunityPage />
       ) : (
-        <ForumPage />
+        <Discussions />
       )}
     </>
   );
@@ -83,7 +53,7 @@ export function ClubScreen({ section }: { section: string }) {
 function MeContent() {
   const params = useSearchParams();
   const section = params.get("section");
-  if (!section || !["notes", "reading", "accountability"].includes(section))
+  if (!section || !["notes", "reading"].includes(section))
     return <ProfileOverview />;
   return (
     <>
@@ -91,14 +61,11 @@ function MeContent() {
         <ArrowLeft size={17} aria-hidden="true" />
         My profile
       </Link>
-      {section === "accountability" ? (
-        <AccountabilityPage />
-      ) : section === "notes" ? (
+      {section === "notes" ? (
         <>
           <PageHeading
-            eyebrow="ONLY YOU CAN SEE THESE"
             title="Private notes"
-            description="The ideas you want to carry with you."
+            description="Only you can see these notes."
           />
           <PrivateNotes />
         </>
@@ -106,7 +73,7 @@ function MeContent() {
         <>
           <PageHeading
             title="Reading history"
-            description="Every little session adds to your story."
+            description="Your saved reading sessions."
           />
           <ReadingHistory />
         </>
@@ -124,13 +91,22 @@ export function MeScreen() {
 function SettingsContent() {
   const { membership } = useMember();
   const params = useSearchParams();
+  if (params.get("section") === "management" && membership.role !== "member")
+    return (
+      <>
+        <Link className="section-back" href="/me/settings">
+          <ArrowLeft size={17} /> Settings
+        </Link>
+        <AdminPage />
+      </>
+    );
   return (
     <>
       <Link className="section-back" href="/me">
         <ArrowLeft size={17} aria-hidden="true" />
         My profile
       </Link>
-      <PageHeading title="Settings" description="Make yourself at home." />
+      <PageHeading title="Settings" />
       <AppearanceSettings />
       <ProfileSettings />
       {membership.role !== "member" && (
@@ -147,7 +123,6 @@ function SettingsContent() {
               ["library", "Library"],
               ["prompts", "Prompts"],
               ["categories", "Categories"],
-              ["partners", "Partner pairing"],
               ["moderation", "Moderation"],
             ].map(([id, label]) => (
               <Link key={id} href={`/me/settings?section=management#${id}`}>

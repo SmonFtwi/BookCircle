@@ -37,7 +37,7 @@ function isActive(path: string, href: string) {
     ? path.startsWith("/club") || path.startsWith("/forum/")
     : href === "/me"
       ? path.startsWith("/me")
-      : path === href;
+      : path === href || path.startsWith(`${href}/`);
 }
 export function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -55,7 +55,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main className="welcome">
         <div className="auth-card">
           <Logo />
-          <h1 className="spaced">Your circle is waiting.</h1>
+          <h1 className="spaced">Sign in to BookCircle</h1>
           <p>Sign in to access your private reading community.</p>
           <Link href="/" className="primary-link">
             Sign in <ArrowRight size={17} />

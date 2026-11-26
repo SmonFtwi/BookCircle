@@ -1,2 +1,2 @@
 import { redirect } from "next/navigation";
-export default function Page() { redirect("/me?section=accountability"); }
+export default function Page() { redirect("/me"); }

@@ -143,6 +143,8 @@ export const api = {
     log: endpoint("reading.log", false),
     logs: endpoint("reading.logs", true),
     reflections: endpoint("reading.reflections", true),
+    saveNote: endpoint("reading.saveNote", false),
+    deleteNote: endpoint("reading.deleteNote", false),
     setGoals: endpoint("reading.setGoals", false),
     stats: endpoint("reading.stats", true),
   },

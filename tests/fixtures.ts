@@ -80,6 +80,7 @@ export async function mockCircle(
   ];
   const shelves = new Map([[book._id, "reading"]]);
   const logs: Record<string, unknown>[] = [];
+  const notes: Record<string, unknown>[] = [];
   const meeting = {
     meeting: {
       _id: "40000000-0000-0000-0000-000000000001",
@@ -103,8 +104,8 @@ export async function mockCircle(
       {
         _id: "60000000-0000-0000-0000-000000000001",
         book,
-        votes: null,
-        percentage: null,
+        votes: null as number | null,
+        percentage: null as number | null,
       },
     ],
     myVote: null as null | string,
@@ -118,6 +119,24 @@ export async function mockCircle(
       let result: unknown = null;
       if (url.includes("bookcircle_mutate")) {
         calls.push({ operation, args });
+        if (operation === "reading.saveNote") {
+          const id = args.id || `private-${notes.length}`;
+          const existing = notes.find((n) => n._id === id);
+          if (existing) Object.assign(existing, { body: args.body });
+          else
+            notes.push({
+              _id: id,
+              body: args.body,
+              bookId: args.bookId ?? null,
+              date: today,
+            });
+          result = id;
+        }
+        if (operation === "reading.deleteNote")
+          notes.splice(
+            notes.findIndex((n) => n._id === args.id),
+            1,
+          );
         if (operation === "reading.setBook")
           shelves.set(args.bookId, args.status);
         if (operation === "reading.removeBook") shelves.delete(args.bookId);
@@ -226,14 +245,17 @@ export async function mockCircle(
       else if (operation === "reading.logs")
         result = { page: logs, isDone: true, continueCursor: "" };
       else if (operation === "reading.reflections")
-        result = logs
-          .filter((log) => log.reflection)
-          .map((log, index) => ({
-            _id: `note-${index}`,
-            bookId: log.bookId,
-            date: log.date,
-            body: log.reflection,
-          }));
+        result = [
+          ...notes,
+          ...logs
+            .filter((log) => log.reflection)
+            .map((log, index) => ({
+              _id: `note-${index}`,
+              bookId: log.bookId,
+              date: log.date,
+              body: log.reflection,
+            })),
+        ];
       else if (operation === "community.feed")
         result = {
           page: [
@@ -324,7 +346,6 @@ export async function mockCircle(
   await page.addInitScript(
     ({ userId, project }) => {
       localStorage.setItem("bookcircle:install-guide-dismissed:v1", "true");
-      localStorage.setItem("bookcircle:onboarding:v1", "true");
       const encode = (obj: unknown) =>
         btoa(JSON.stringify(obj))
           .replaceAll("=", "")
@@ -350,9 +371,9 @@ export async function mockCircle(
     },
     { userId, project: projectRef },
   );
-  await page.goto("/club/challenges");
+  await page.goto("/home");
   await expect(
-    page.getByRole("heading", { name: "Less screen time", exact: true }),
+    page.getByRole("heading", { name: "Hi, Alex", exact: true }),
   ).toBeVisible();
-  return { calls, row };
+  return { calls, row, voting };
 }

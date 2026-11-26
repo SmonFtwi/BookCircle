@@ -13,6 +13,8 @@ import {
 } from "./primitives";
 import { ProgressRing } from "./signature";
 import { useMember } from "./shell";
+import { Button } from "@/components/ui/button";
+import { launchQuickAction } from "./quick-actions";
 import { EditBook } from "./reading";
 export function BookDetail({ id }: { id: string }) {
   const library = useQuery(api.reading.library);
@@ -60,6 +62,13 @@ export function BookDetail({ id }: { id: string }) {
         <p className="meta">
           {book.totalPages} pages · Your place: page {entry?.currentPage ?? 0}
         </p>
+        <Button
+          onClick={() =>
+            launchQuickAction({ action: "reading", bookId: book._id })
+          }
+        >
+          Log reading
+        </Button>
         {feedback}
         <Field label="Reading status">
           <select

@@ -1,2 +1,2 @@
 import { redirect } from "next/navigation";
-export default function Page() { redirect("/club/challenges"); }
+export default function Page() { redirect("/club/discuss"); }

@@ -27,7 +27,6 @@ import {
   Settings,
   Feather,
   BookOpen,
-  HeartHandshake,
   ChevronRight,
   Flame,
   LockKeyhole,
@@ -68,7 +67,7 @@ export function ProfileSettings() {
             save({
               name: value(d, "name"),
               timezone: value(d, "timezone"),
-              shareReadingDetails: d.get("share") === "on",
+              shareReadingDetails: false,
               notificationsEnabled: d.get("notifications") === "on",
             })
           }
@@ -96,14 +95,6 @@ export function ProfileSettings() {
               ))}
             </select>
           </Field>
-          <label className="check-field">
-            <input
-              type="checkbox"
-              name="share"
-              defaultChecked={profile.shareReadingDetails}
-            />
-            Share exact reading logs with my accountability partner
-          </label>
           <label className="check-field">
             <input
               type="checkbox"
@@ -191,7 +182,8 @@ export function ProfileSettings() {
           variant="ghost"
           onClick={() =>
             run(async () => {
-              await authClient.signOut();
+              const result = await authClient.signOut();
+              if (result.error) throw new Error(result.error.message);
               router.push("/");
             })
           }
@@ -212,7 +204,7 @@ export function ProfileOverview() {
   if (!stats) return <Loading />;
   return (
     <>
-      <PageHeading eyebrow="YOUR LITTLE CORNER OF THE CIRCLE" title="Me" />
+      <PageHeading title="Me" />
       <section className="profile-identity">
         <span
           className="profile-avatar"
@@ -262,7 +254,7 @@ export function ProfileOverview() {
         ))}
       </section>
       <div className="section-head profile-collection-heading">
-        <h2>Your reading space</h2>
+        <h2>Your reading</h2>
       </div>
       <nav className="profile-destinations" aria-label="Your personal space">
         {[
@@ -277,12 +269,6 @@ export function ProfileOverview() {
             title: "Reading history",
             description: "Your sessions, progress and reading rhythm.",
             icon: BookOpen,
-          },
-          {
-            href: "/me?section=accountability",
-            title: "Commitments & partner",
-            description: "Put an idea into practice, together.",
-            icon: HeartHandshake,
           },
         ].map((item) => (
           <Link key={item.href} href={item.href}>
@@ -301,7 +287,7 @@ export function ProfileOverview() {
         <div className="row between">
           <div>
             <span className="section-kicker">THIS WEEK</span>
-            <h2>A little consistency.</h2>
+            <h2>Weekly reading</h2>
             <p className="muted">
               {stats.week.minutes} of {stats.goals.minutes} reading minutes
             </p>
@@ -321,7 +307,7 @@ export function ProfileOverview() {
             <Flame size={17} aria-hidden="true" />
             {stats.streak
               ? `${stats.streak}-day streak`
-              : "A fresh start, any day"}
+              : "Start your next session"}
           </span>
           <Goals />
         </div>
@@ -332,31 +318,80 @@ export function ProfileOverview() {
 export function PrivateNotes() {
   const reflections = useQuery(api.reading.reflections);
   const library = useQuery(api.reading.library);
+  const remove = useMutation(api.reading.deleteNote);
+  const saveNote = useMutation(api.reading.saveNote);
+  const { run, busy, feedback } = useFeedback();
   if (!reflections || !library) return <Loading />;
   return (
     <div className="stack">
+      {reflections.length > 0 && (
+        <Button onClick={() => launchQuickAction({ action: "note" })}>
+          <Feather size={18} />
+          Add a note
+        </Button>
+      )}
+      {feedback}
       {reflections.length ? (
         reflections.map((note) => (
           <article className="panel private-note" key={note._id}>
             <div className="row between">
               <span className="book-category">
                 {library.find((book) => book._id === note.bookId)?.title ??
-                  "A reading reflection"}
+                  "Private note"}
               </span>
               <span className="meta">{note.date}</span>
             </div>
             <p className="prose">{note.body}</p>
-            <p className="meta">
-              <LockKeyhole size={13} aria-hidden="true" />
-              Only you
-            </p>
+            <div className="row between">
+              <p className="meta">
+                <LockKeyhole size={13} aria-hidden="true" />
+                Only you
+              </p>
+              <span className="pill-row">
+                <Modal
+                  title="Edit private note"
+                  trigger={<Button variant="ghost">Edit note</Button>}
+                >
+                  <ActionForm
+                    successMessage="Saved privately."
+                    label="Save private note"
+                    onSubmit={(d) =>
+                      saveNote({
+                        id: note._id,
+                        body: value(d, "body"),
+                        ...(note.bookId ? { bookId: note.bookId } : {}),
+                      })
+                    }
+                  >
+                    <Field label="Your note">
+                      <textarea
+                        name="body"
+                        defaultValue={note.body}
+                        maxLength={10000}
+                        required
+                      />
+                    </Field>
+                  </ActionForm>
+                </Modal>
+                <Button
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm("Delete this private note?"))
+                      void run(() => remove({ id: note._id }), "Note deleted.");
+                  }}
+                >
+                  Delete note
+                </Button>
+              </span>
+            </div>
           </article>
         ))
       ) : (
         <section className="panel">
           <Empty
-            title="Keep your first good idea"
-            description="Your private notes live here. A sentence is a lovely place to start."
+            title="Add your first note"
+            description="Save a thought here. Only you can see it."
             action={
               <Button onClick={() => launchQuickAction({ action: "note" })}>
                 <Feather size={18} />

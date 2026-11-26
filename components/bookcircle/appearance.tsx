@@ -29,7 +29,6 @@ export function AppearanceSettings() {
   return (
     <section className="panel mb-6">
       <h2>Appearance</h2>
-      <p className="muted">Paper and ink, by day or by night.</p>
       <div className="theme-options" role="group" aria-label="Color theme">
         {["system", "light", "dark"].map((option) => (
           <Button

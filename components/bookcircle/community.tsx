@@ -6,15 +6,7 @@ import { api } from "@/lib/supabase/api";
 import type { Id } from "@/lib/supabase/contracts";
 import { MessageCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  ActionForm,
-  Field,
-  Modal,
-  value,
-  PageHeading,
-  Empty,
-  useFeedback,
-} from "./primitives";
+import { ActionForm, Field, Modal, value, useFeedback } from "./primitives";
 import { BookSelect } from "./reading";
 import { useMember } from "./shell";
 type Insight = Awaited<ReturnType<typeof api.community.feed>>["page"][number];
@@ -45,7 +37,7 @@ export function ShareInsight({
     <Modal
       open={open}
       onOpenChange={setOpen}
-      title={existing ? "Edit your insight" : "What stayed with you?"}
+      title={existing ? "Edit post" : "What stayed with you?"}
       description="Share an idea, a lesson, or a different way of seeing things."
       trigger={
         trigger || (
@@ -58,7 +50,7 @@ export function ShareInsight({
     >
       <ActionForm
         onSuccess={() => setOpen(false)}
-        label={existing ? "Save changes" : "Share with the circle"}
+        label={existing ? "Save changes" : "Post to club"}
         onSubmit={(d) => {
           const args = {
             title: value(d, "title"),
@@ -73,7 +65,7 @@ export function ShareInsight({
             : create(args);
         }}
       >
-        <Field label="Give your insight a title">
+        <Field label="Title">
           <input
             name="title"
             maxLength={200}
@@ -81,7 +73,7 @@ export function ShareInsight({
             defaultValue={existing?.post.title}
           />
         </Field>
-        <Field label="Your reflection">
+        <Field label="Your message">
           <textarea
             name="content"
             maxLength={10000}
@@ -176,7 +168,9 @@ export function InsightCard({ item }: { item: Insight }) {
         </div>
       </div>
       <h3>{item.post.title}</h3>
-      <p className="prose">{item.post.content}</p>
+      {item.post.content !== item.post.title && (
+        <p className="prose">{item.post.content}</p>
+      )}
       {item.bookTitle && (
         <span className="tag mt-3">
           {item.bookTitle}
@@ -184,25 +178,21 @@ export function InsightCard({ item }: { item: Insight }) {
         </span>
       )}
       <div className="reaction-row">
-        {(
-          [
-            { type: "helpful", label: "Helpful", emoji: "❤️" },
-            { type: "interesting", label: "Interesting", emoji: "💡" },
-            { type: "applied", label: "Applied", emoji: "🌱" },
-          ] as const
-        ).map((r) => (
-          <button
-            key={r.type}
-            aria-pressed={item.myReactions.includes(r.type)}
-            disabled={busy}
-            onClick={() =>
-              run(() => react({ id: item.post._id, type: r.type }))
-            }
-          >
-            <span aria-hidden="true">{r.emoji}</span>
-            {r.label} {item.post[r.type] || ""}
-          </button>
-        ))}
+        {([{ type: "helpful", label: "Helpful", emoji: "❤️" }] as const).map(
+          (r) => (
+            <button
+              key={r.type}
+              aria-pressed={item.myReactions.includes(r.type)}
+              disabled={busy}
+              onClick={() =>
+                run(() => react({ id: item.post._id, type: r.type }))
+              }
+            >
+              <span aria-hidden="true">{r.emoji}</span>
+              {r.label} {item.post[r.type] || ""}
+            </button>
+          ),
+        )}
         <button onClick={() => setComments(!comments)}>
           <MessageCircle size={14} />
           {item.post.commentCount} comments
@@ -219,7 +209,7 @@ export function InsightCard({ item }: { item: Insight }) {
       {feedback}
       {comments && <Comments id={item.post._id} />}
       <Modal
-        title="Delete your insight?"
+        title="Delete this post?"
         open={confirm}
         onOpenChange={setConfirm}
         description="Your post will be removed from the community feed."
@@ -229,49 +219,9 @@ export function InsightCard({ item }: { item: Insight }) {
           disabled={busy}
           onClick={() => run(() => remove({ id: item.post._id }))}
         >
-          Delete insight
+          Delete post
         </Button>
       </Modal>
     </article>
-  );
-}
-export function CommunityPage() {
-  const feed = usePaginatedQuery(
-    api.community.feed,
-    {},
-    { initialNumItems: 10 },
-  );
-  return (
-    <>
-      <PageHeading
-        eyebrow="READ SOMETHING. SHARE SOMETHING."
-        title="From the circle"
-        description="Ideas worth keeping. Reflections worth sharing."
-        action={<ShareInsight />}
-      />
-      <div className="discussion-feed">
-        <section className="stack">
-          {feed.results.length ? (
-            feed.results.map((item) => (
-              <InsightCard key={item.post._id} item={item} />
-            ))
-          ) : (
-            <Empty
-              title="A space for your first insight"
-              description="What has your reading taught you lately? Your perspective could inspire someone."
-            />
-          )}
-          {feed.status === "CanLoadMore" && (
-            <Button
-              className="mt-5"
-              variant="outline"
-              onClick={() => feed.loadMore(10)}
-            >
-              Load more insights
-            </Button>
-          )}
-        </section>
-      </div>
-    </>
   );
 }

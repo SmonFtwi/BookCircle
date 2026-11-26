@@ -1,18 +1,22 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation } from "@/lib/supabase/hooks";
 import { api } from "@/lib/supabase/api";
 import { Bell } from "lucide-react";
-import { Modal, Empty, useFeedback } from "./primitives";
+import { Modal, Empty, Loading, useFeedback } from "./primitives";
 import { Button } from "@/components/ui/button";
 export function Notifications() {
+  const [open, setOpen] = useState(false);
   const rows = useQuery(api.notifications.list);
   const mark = useMutation(api.notifications.markRead);
   const { run, feedback } = useFeedback();
   const unread = rows?.filter((r) => !r.read).length ?? 0;
   return (
     <Modal
-      title="From your circle"
+      title="Notifications"
+      open={open}
+      onOpenChange={setOpen}
       trigger={
         <button
           className="notification-button p-2"
@@ -24,7 +28,9 @@ export function Notifications() {
       }
     >
       {feedback}
-      {rows?.length ? (
+      {!rows ? (
+        <Loading />
+      ) : rows.length ? (
         <>
           <Button variant="ghost" onClick={() => run(() => mark({}))}>
             Mark all as read
@@ -33,7 +39,10 @@ export function Notifications() {
             <div className="list-item" key={r._id}>
               <Link
                 href={r.href}
-                onClick={() => run(() => mark({ id: r._id }))}
+                onClick={() => {
+                  setOpen(false);
+                  void run(() => mark({ id: r._id }));
+                }}
               >
                 <div className="row">
                   <strong>{r.title}</strong>

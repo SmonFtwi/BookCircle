@@ -4,30 +4,32 @@ BookCircle is an invitation-only book club app. Members track what they read, re
 
 ## See it in action
 
-A warm reading room, with Home, Library, Club, and Me always within reach. The center button opens reading, notes, questions, and challenge check-ins without leaving the screen.
+A warm reading room, with Home, Library, Club, and Me always within reach. The center button opens reading, private notes, and club posts without leaving the screen.
 
-| Home | Library |
-| --- | --- |
-| ![Home feed at 390px](docs/screenshots/home.png) | ![Library at 390px](docs/screenshots/library.png) |
-| Club | Me |
+| Home                                                    | Library                                               |
+| ------------------------------------------------------- | ----------------------------------------------------- |
+| ![Home feed at 390px](docs/screenshots/home.png)        | ![Library at 390px](docs/screenshots/library.png)     |
+| Club                                                    | Me                                                    |
 | ![Club discussions at 390px](docs/screenshots/club.png) | ![Personal reading at 390px](docs/screenshots/me.png) |
 
 [Quick-action sheet](docs/screenshots/quick-action-sheet.png) · [Reading form](docs/screenshots/reading-form.png) · [Dark mode](docs/screenshots/home-dark.png) · [Before the overhaul](docs/screenshots/before-home.png)
 
-[Library, Club and profile design refinement](docs/section-design-refinement.md): compact shelves on small screens, inline Club filters, and separate destinations for private notes, reading history, and commitments.
-
-Screenshots use mocked sample data. See [the UX review](docs/ux-review.md) for feature locations, validation, and implementation limits. Private notes currently require a reading session; the sheet explains this and asks for actual minutes. [Backend proposals](docs/proposed-migrations.md) are documentation only.
+Screenshots use mocked sample data. The current [minimal experience](docs/minimal-experience.md) supersedes earlier UX review documents. No tutorial is required to navigate the app; first-time usability still needs validation with real members.
 
 ## What members can do
 
-- **Read:** Browse the club library, organize personal shelves, and log reading to track weekly goals and streaks.
-- **Reflect:** Keep private notes, share insights with the club, and discuss books in the forum. Members can also ask questions anonymously.
-- **Apply:** Set commitments, check in with an accountability partner, and join reading or habit challenges.
-- **Meet:** Vote on the next book, RSVP to meetings, and share a review built around three lessons from a book.
+- **Read:** Find books, manage personal shelves, and log time and page progress.
+- **Keep notes:** Save, edit, and delete private notes without creating reading sessions.
+- **Discuss:** Share thoughts, ask questions, and reply in one club discussion view.
+- **Choose and meet:** Vote for the next book and RSVP to club meetings.
+
+The simplified interface removes challenges, accountability partners, commitments, structured meeting-review forms, and automatic tutorials. Existing records are retained. See [the implementation notes](docs/minimal-experience.md).
+
+**Before deploying this frontend:** apply `supabase/migrations/20261126120000_minimal_member_experience.sql`. It supplies standalone notes, protects private session notes in legacy partner responses, and fixes tied/empty voting results.
 
 ## Tech stack
 
-Next.js App Router, React, TypeScript, Tailwind CSS, and shadcn/ui power the interface. Supabase provides authentication, PostgreSQL, private avatar storage, and Realtime updates. React Hook Form and Zod handle forms, and Recharts displays progress.
+Next.js App Router, React, TypeScript, Tailwind CSS, and shadcn/ui power the interface. Supabase provides authentication, PostgreSQL, private avatar storage, and Realtime updates. React Hook Form and Zod handle forms.
 
 ## Run locally
 
@@ -52,13 +54,13 @@ Start the app with `npm run dev` and open [http://localhost:3000](http://localho
 
 ## Roles
 
-| Role      | Access                                                                                                                            |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Member    | Personal reading activity and normal club participation                                                                           |
-| Moderator | Shared content tools, library, forum moderation, insights, challenges, voting, meetings, prompts, categories, and partner pairing |
-| Admin     | All moderator tools plus invitations, member activation, and role assignment                                                      |
+| Role      | Access                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------- |
+| Member    | Personal reading activity and normal club participation                                           |
+| Moderator | Shared content tools, library, forum moderation, posts, voting, meetings, prompts, and categories |
+| Admin     | All moderator tools plus invitations, member activation, and role assignment                      |
 
-Admins assign roles in **Me → Settings → Club management → Members → Role**. A user cannot change their own role from this screen, and the database prevents demoting the last active administrator. Moderators cannot invite new users to the club, change account access, or assign roles; they can invite existing members to challenges. Private reading records and reflections remain personal. Administrators and moderators can identify anonymous forum authors for moderation.
+Admins assign roles in **Me → Settings → Club management → Members → Role**. A user cannot change their own role from this screen, and the database prevents demoting the last active administrator. Moderators cannot invite new users to the club, change account access, or assign roles. Private reading records and reflections remain personal. Administrators and moderators can identify anonymous forum authors for moderation.
 
 ## Database and security
 

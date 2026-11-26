@@ -230,11 +230,13 @@ export function ActionForm({
   children,
   label = "Save",
   onSuccess,
+  successMessage = "Saved.",
 }: {
   onSubmit: (data: FormData) => Promise<unknown>;
   children: ReactNode;
   label?: string;
   onSuccess?: () => void;
+  successMessage?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -266,7 +268,7 @@ export function ActionForm({
       )}
       {done && (
         <p role="status" className="success-message">
-          Saved to your circle.
+          {successMessage}
         </p>
       )}
       <Button disabled={busy} type="submit">
