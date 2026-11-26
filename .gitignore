@@ -74,3 +74,61 @@ GEMINI.md
 *~
 
 /docs/tutorial
+
+# Local documentation and agent-written reviews
+/docs/reviews
+/docs/instructions
+
+# Additional local agent instructions, prompts, and tool connections
+AGENTS.*.md
+CLAUDE.*.md
+CODEX.*.md
+GEMINI.*.md
+.github/agents/
+.github/prompts/
+.copilot/
+.continue/
+.windsurf/
+.windsurfrules
+.roo/
+.roorules
+.kilocode/
+.aider*
+.mcp.json
+/.mcp/
+/mcp.json
+/mcp-config.json
+/opencode.json
+/opencode.jsonc
+*.local.md
+*.local.json
+*.local.yaml
+*.local.yml
+
+# Private credentials and local service configuration
+.secrets*
+/secrets/
+/private/
+.aws/
+.azure/
+.gcloud/
+.npmrc
+.netrc
+.pgpass
+.pg_service.conf
+*.key
+*.p12
+*.pfx
+*.keystore
+*service-account*.json
+*service_account*.json
+/credentials.json
+
+# Database dumps may contain real member data; migrations stay versioned
+/backups/
+/supabase/backups/
+*.dump
+*.backup
+*.sql.gz
+*.sql.zip
+/supabase/.branches/
